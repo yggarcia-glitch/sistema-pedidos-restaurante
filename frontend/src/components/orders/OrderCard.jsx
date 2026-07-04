@@ -25,7 +25,8 @@ const STATUS_LABELS = {
 };
 
 export function OrderCard({ order }) {
-  const { id, restaurant, status, total, createdAt, items } = order;
+  const { id, restaurant, estado, total, createdAt, items } = order;
+  const status = estado?.nombre; // la API ahora envía el estado como { id, nombre }
   const date = new Date(createdAt).toLocaleDateString('es-EC', {
     day: '2-digit',
     month: 'short',

@@ -30,8 +30,6 @@ export default function RegisterScreen() {
   const { register } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  // Rol elegible al registrarse (CLIENTE o VENDEDOR).
-  const [role, setRole] = useState<Role>(Role.CLIENTE);
   const {
     control,
     handleSubmit,
@@ -43,15 +41,15 @@ export default function RegisterScreen() {
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      const user = await register({
+      // La app móvil solo registra clientes (rol por defecto en el backend).
+      await register({
         name: data.name.trim(),
         email: data.email.trim(),
         password: data.password,
         phone: data.phone.trim() || undefined,
-        role,
+        role: Role.CLIENTE,
       });
-      if (user.role === Role.VENDEDOR) router.replace('/(vendor)/dashboard');
-      else router.replace('/(client)');
+      router.replace('/(client)');
     } catch (e) {
       notify('Error al registrarse', getApiError(e));
     } finally {
@@ -144,21 +142,6 @@ export default function RegisterScreen() {
             )}
           />
 
-          {/* Selector de rol */}
-          <Text style={styles.roleLabel}>Tipo de cuenta</Text>
-          <View style={styles.roleRow}>
-            <RoleOption
-              label="Cliente"
-              active={role === Role.CLIENTE}
-              onPress={() => setRole(Role.CLIENTE)}
-            />
-            <RoleOption
-              label="Vendedor"
-              active={role === Role.VENDEDOR}
-              onPress={() => setRole(Role.VENDEDOR)}
-            />
-          </View>
-
           <Button
             title="Registrarme"
             onPress={handleSubmit(onSubmit)}
@@ -176,26 +159,6 @@ export default function RegisterScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  );
-}
-
-function RoleOption({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      style={[styles.roleOption, active && styles.roleOptionActive]}
-      onPress={onPress}
-      activeOpacity={0.8}
-    >
-      <Text style={[styles.roleText, active && styles.roleTextActive]}>{label}</Text>
-    </TouchableOpacity>
   );
 }
 

@@ -26,6 +26,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
+      include: { rol: { select: { id: true, nombre: true } } },
     });
 
     if (!user || !user.refreshToken || !user.isActive) {
@@ -39,6 +40,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
     }
 
     const { password, refreshToken: _, ...safeUser } = user;
-    return safeUser;
+    // Expone `role` como string para @GetUser('role') en el refresh.
+    return { ...safeUser, role: user.rol.nombre };
   }
 }

@@ -21,7 +21,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     let result = users;
     if (search) result = result.filter((u) => u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()));
-    if (roleFilter) result = result.filter((u) => u.role === roleFilter);
+    if (roleFilter) result = result.filter((u) => u.rol?.nombre === roleFilter);
     setFiltered(result);
   }, [search, roleFilter, users]);
 
@@ -82,7 +82,7 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-4 py-3">
                       <select
-                        value={user.role}
+                        value={user.rol?.nombre}
                         onChange={(e) => changeRole(user, e.target.value)}
                         className="text-xs border border-border rounded-lg px-2 py-1 bg-white focus:outline-none"
                       >

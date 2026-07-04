@@ -7,20 +7,48 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '../common/enums/role.enum';
 import { OrderStatus } from '../common/enums/order-status.enum';
+import { DeliveryType } from '../common/enums/delivery-type.enum';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-status.dto';
 
 // Estados que un VENDEDOR puede asignar (no puede entregar ni cancelar manualmente)
-const VENDOR_ALLOWED_STATUSES: OrderStatus[] = [
+const VENDOR_ALLOWED_STATUSES: string[] = [
   OrderStatus.CONFIRMADO,
   OrderStatus.EN_PREPARACION,
   OrderStatus.LISTO,
   OrderStatus.RECHAZADO,
 ];
 
+// Selección estándar de un catálogo { id, nombre }.
+const CATALOGO = { select: { id: true, nombre: true } };
+
+// Include reutilizable con los catálogos anidados como objetos.
+const ORDER_DETAIL_INCLUDE = {
+  items: { include: { choices: true } },
+  statusHistory: { orderBy: { changedAt: 'asc' as const }, include: { estado: CATALOGO } },
+  payment: { include: { metodo: CATALOGO, estado: CATALOGO } },
+  restaurant: { select: { id: true, name: true, ownerId: true, logoUrl: true } },
+  address: true,
+  estado: CATALOGO,
+  tipoEntrega: CATALOGO,
+};
+
 @Injectable()
 export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
+
+  // ── Helpers para resolver el nombre de catálogo a su id (FK) ────────────────
+  private async estadoPedidoId(nombre: string): Promise<number> {
+    const e = await this.prisma.estadoPedido.findUnique({ where: { nombre } });
+    if (!e) throw new BadRequestException(`Estado de pedido inválido: ${nombre}`);
+    return e.id;
+  }
+
+  private async tipoEntregaId(nombre: string): Promise<number> {
+    const t = await this.prisma.tipoEntrega.findUnique({ where: { nombre } });
+    if (!t) throw new BadRequestException(`Tipo de entrega inválido: ${nombre}`);
+    return t.id;
+  }
 
   async create(userId: string, dto: CreateOrderDto) {
     const cart = await this.prisma.cart.findUnique({
@@ -57,8 +85,9 @@ export class OrdersService {
       return acc + (Number(item.unitPrice) + extrasTotal) * item.quantity;
     }, 0);
 
+    const tipoEntregaNombre = dto.deliveryType ?? DeliveryType.DELIVERY;
     const deliveryFee =
-      dto.deliveryType === 'PICKUP' ? 0 : Number(restaurant.deliveryFee);
+      tipoEntregaNombre === DeliveryType.PICKUP ? 0 : Number(restaurant.deliveryFee);
     const total = subtotal + deliveryFee;
 
     if (subtotal < Number(restaurant.minOrder)) {
@@ -67,6 +96,10 @@ export class OrdersService {
       );
     }
 
+    // Resuelve los catálogos a FK antes de la transacción.
+    const estadoPendienteId = await this.estadoPedidoId(OrderStatus.PENDIENTE);
+    const tipoEntregaIdVal = await this.tipoEntregaId(tipoEntregaNombre);
+
     // Transacción: crear orden + items con snapshot + historial + vaciar carrito
     const order = await this.prisma.$transaction(async (tx) => {
       const newOrder = await tx.order.create({
@@ -74,7 +107,8 @@ export class OrdersService {
           clientId: userId,
           restaurantId: cart.restaurantId!,
           addressId: dto.addressId,
-          deliveryType: (dto.deliveryType as any) ?? 'DELIVERY',
+          estadoId: estadoPendienteId,
+          tipoEntregaId: tipoEntregaIdVal,
           subtotal,
           deliveryFee,
           discount: 0,
@@ -84,30 +118,25 @@ export class OrdersService {
           items: {
             create: cart.items.map((item) => ({
               productId: item.productId,
-              productName: item.product.name,    // snapshot inmutable
+              productName: item.product.name, // snapshot inmutable
               quantity: item.quantity,
-              unitPrice: item.unitPrice,          // snapshot al precio de compra
+              unitPrice: item.unitPrice, // snapshot al precio de compra
               subtotal: Number(item.unitPrice) * item.quantity,
               notes: item.notes,
               choices: {
                 create: item.choices.map((c) => ({
                   choiceId: c.choiceId,
-                  choiceName: c.choice.name,        // snapshot
-                  extraPrice: c.choice.extraPrice,  // snapshot
+                  choiceName: c.choice.name, // snapshot
+                  extraPrice: c.choice.extraPrice, // snapshot
                 })),
               },
             })),
           },
           statusHistory: {
-            create: { status: OrderStatus.PENDIENTE as any, changedBy: userId },
+            create: { estadoId: estadoPendienteId, changedBy: userId },
           },
         },
-        include: {
-          items: { include: { choices: true } },
-          statusHistory: true,
-          restaurant: { select: { id: true, name: true, deliveryFee: true } },
-          address: true,
-        },
+        include: ORDER_DETAIL_INCLUDE,
       });
 
       // Vaciar carrito tras confirmar el pedido
@@ -150,9 +179,11 @@ export class OrdersService {
         take: limit,
         include: {
           items: { include: { choices: true } },
-          payment: true,
+          payment: { include: { metodo: CATALOGO, estado: CATALOGO } },
           restaurant: { select: { id: true, name: true, logoUrl: true } },
           address: true,
+          estado: CATALOGO,
+          tipoEntrega: CATALOGO,
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -165,13 +196,7 @@ export class OrdersService {
   async findOne(id: string, userId: string, userRole: string) {
     const order = await this.prisma.order.findUnique({
       where: { id },
-      include: {
-        items: { include: { choices: true } },
-        statusHistory: { orderBy: { changedAt: 'asc' } },
-        payment: true,
-        restaurant: { select: { id: true, name: true, ownerId: true, logoUrl: true } },
-        address: true,
-      },
+      include: ORDER_DETAIL_INCLUDE,
     });
 
     if (!order) throw new NotFoundException('Pedido no encontrado');
@@ -202,11 +227,13 @@ export class OrdersService {
       }
     }
 
+    const nuevoEstadoId = await this.estadoPedidoId(dto.status);
+
     return this.prisma.$transaction(async (tx) => {
       await tx.orderStatusHistory.create({
         data: {
           orderId: id,
-          status: dto.status as any,
+          estadoId: nuevoEstadoId,
           note: dto.note,
           changedBy: userId,
         },
@@ -217,37 +244,44 @@ export class OrdersService {
 
       return tx.order.update({
         where: { id },
-        data: { status: dto.status as any, ...(deliveredAt && { deliveredAt }) },
+        data: { estadoId: nuevoEstadoId, ...(deliveredAt && { deliveredAt }) },
         include: {
           items: { include: { choices: true } },
-          statusHistory: { orderBy: { changedAt: 'asc' } },
+          statusHistory: { orderBy: { changedAt: 'asc' }, include: { estado: CATALOGO } },
+          estado: CATALOGO,
+          tipoEntrega: CATALOGO,
         },
       });
     });
   }
 
   async cancel(id: string, userId: string) {
-    const order = await this.prisma.order.findUnique({ where: { id } });
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: { estado: CATALOGO },
+    });
     if (!order) throw new NotFoundException('Pedido no encontrado');
     if (order.clientId !== userId) {
       throw new ForbiddenException('No puedes cancelar este pedido');
     }
-    if (order.status !== (OrderStatus.PENDIENTE as any)) {
+    if (order.estado.nombre !== OrderStatus.PENDIENTE) {
       throw new BadRequestException('Solo puedes cancelar pedidos en estado PENDIENTE');
     }
+
+    const canceladoId = await this.estadoPedidoId(OrderStatus.CANCELADO);
 
     return this.prisma.$transaction(async (tx) => {
       await tx.orderStatusHistory.create({
         data: {
           orderId: id,
-          status: OrderStatus.CANCELADO as any,
+          estadoId: canceladoId,
           changedBy: userId,
         },
       });
       return tx.order.update({
         where: { id },
-        data: { status: OrderStatus.CANCELADO as any },
-        select: { id: true, status: true, updatedAt: true },
+        data: { estadoId: canceladoId },
+        include: { estado: CATALOGO, tipoEntrega: CATALOGO },
       });
     });
   }

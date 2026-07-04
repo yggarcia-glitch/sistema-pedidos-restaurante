@@ -25,7 +25,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       const user = await authRegister(data);
-      navigate(ROLE_REDIRECT[user.role] ?? '/');
+      navigate(ROLE_REDIRECT[user.rol.nombre] ?? '/');
     } catch (err) {
       setError(err.response?.data?.message ?? 'Error al registrarse');
     } finally {

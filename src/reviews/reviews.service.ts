@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '../common/enums/role.enum';
+import { OrderStatus } from '../common/enums/order-status.enum';
 import { CreateReviewDto } from './dto/create-review.dto';
 
 @Injectable()
@@ -23,7 +24,7 @@ export class ReviewsService {
       where: {
         clientId: userId,
         restaurantId: dto.restaurantId,
-        status: 'ENTREGADO' as any,
+        estado: { nombre: OrderStatus.ENTREGADO },
       },
     });
     if (!pedidoEntregado) {

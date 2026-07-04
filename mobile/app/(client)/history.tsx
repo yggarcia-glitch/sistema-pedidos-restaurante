@@ -42,9 +42,12 @@ export default function HistoryScreen() {
   );
 
   const filtered = orders.filter((o) => {
-    if (filter === 'entregados') return o.status === OrderStatus.ENTREGADO;
+    if (filter === 'entregados') return o.estado.nombre === OrderStatus.ENTREGADO;
     if (filter === 'cancelados')
-      return o.status === OrderStatus.CANCELADO || o.status === OrderStatus.RECHAZADO;
+      return (
+        o.estado.nombre === OrderStatus.CANCELADO ||
+        o.estado.nombre === OrderStatus.RECHAZADO
+      );
     return true;
   });
 

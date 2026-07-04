@@ -23,7 +23,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const user = await login(email, password);
-      navigate(ROLE_REDIRECT[user.role] ?? '/');
+      navigate(ROLE_REDIRECT[user.rol.nombre] ?? '/');
     } catch (err) {
       setError(err.response?.data?.message ?? 'Credenciales inválidas');
     } finally {

@@ -1,12 +1,18 @@
-// ─── Configuración de la API ─────────────────────────────────────────────────
-// IMPORTANTE: reemplaza la IP por la de la máquina donde corre el backend NestJS.
-// En Expo Go (dispositivo físico) NO sirve "localhost": debe ser la IP LAN del PC.
-// El backend expone todo bajo el prefijo global "/api".
-//
-// Para saber tu IP: Windows -> ipconfig (IPv4). Ambos deben estar en la misma red.
-const LOCAL_IP = '192.168.21.100';
+import { Platform } from 'react-native';
 
-export const API_URL = `http://${LOCAL_IP}:3000/api`;
+// ─── Configuración de la API ─────────────────────────────────────────────────
+// El backend expone todo bajo el prefijo global "/api" en el puerto 3000.
+//
+// - En WEB (navegador en la misma PC) se usa "localhost".
+// - En NATIVO (Expo Go en el teléfono) NO sirve "localhost": debe ser la IP LAN
+//   del PC. Reemplaza LOCAL_IP por la tuya (Windows -> ipconfig -> IPv4).
+//   El teléfono y el PC deben estar en la misma red Wi-Fi.
+const LOCAL_IP = '192.168.1.23';
+
+export const API_URL =
+  Platform.OS === 'web'
+    ? 'http://localhost:3000/api'
+    : `http://${LOCAL_IP}:3000/api`;
 
 // Claves de almacenamiento seguro para los tokens (expo-secure-store)
 export const ACCESS_TOKEN_KEY = 'accessToken';

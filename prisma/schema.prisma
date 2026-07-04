@@ -8,49 +8,61 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── Enums ───────────────────────────────────────────────────────────────────
+// ─── Catálogos (antes enums, ahora tablas normalizadas) ──────────────────────
 
-enum Role {
-  CLIENTE
-  VENDEDOR
-  ADMIN
+model Rol {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique @db.VarChar(30)
+
+  users User[]
+
+  @@map("roles")
 }
 
-enum OrderStatus {
-  PENDIENTE
-  CONFIRMADO
-  EN_PREPARACION
-  LISTO
-  EN_CAMINO
-  ENTREGADO
-  CANCELADO
-  RECHAZADO
+model EstadoPedido {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique @db.VarChar(30)
+
+  orders        Order[]
+  statusHistory OrderStatusHistory[]
+
+  @@map("estados_pedido")
 }
 
-enum DeliveryType {
-  DELIVERY
-  PICKUP
+model TipoEntrega {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique @db.VarChar(30)
+
+  orders Order[]
+
+  @@map("tipos_entrega")
 }
 
-enum PaymentMethod {
-  EFECTIVO
-  TARJETA_CREDITO
-  TARJETA_DEBITO
-  TRANSFERENCIA
-  PAYPAL
-  STRIPE
+model MetodoPago {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique @db.VarChar(30)
+
+  payments Payment[]
+
+  @@map("metodos_pago")
 }
 
-enum PaymentStatus {
-  PENDIENTE
-  COMPLETADO
-  FALLIDO
-  REEMBOLSADO
+model EstadoPago {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique @db.VarChar(30)
+
+  payments Payment[]
+
+  @@map("estados_pago")
 }
 
-enum TagType {
-  COMIDA
-  RESTAURANTE
+model TipoTag {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique @db.VarChar(30)
+
+  tags Tag[]
+
+  @@map("tipos_tag")
 }
 
 // ─── Modelos ─────────────────────────────────────────────────────────────────
@@ -61,13 +73,14 @@ model User {
   email        String    @unique
   password     String
   phone        String?
-  role         Role      @default(CLIENTE)
+  rolId        Int       @map("rol_id")
   avatarUrl    String?
   isActive     Boolean   @default(true)
   refreshToken String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
+  rol        Rol         @relation(fields: [rolId], references: [id])
   addresses  Address[]
   restaurant Restaurant?
   cart       Cart?
@@ -258,8 +271,8 @@ model Order {
   clientId     String
   restaurantId String
   addressId    String?
-  status       OrderStatus  @default(PENDIENTE)
-  deliveryType DeliveryType @default(DELIVERY)
+  estadoId     Int          @map("estado_id")
+  tipoEntregaId Int         @map("tipo_entrega_id")
   subtotal     Decimal      @db.Decimal(10, 2)
   deliveryFee  Decimal      @default(0) @db.Decimal(10, 2)
   discount     Decimal      @default(0) @db.Decimal(10, 2)
@@ -273,6 +286,8 @@ model Order {
   client        User                 @relation(fields: [clientId], references: [id])
   restaurant    Restaurant           @relation(fields: [restaurantId], references: [id])
   address       Address?             @relation(fields: [addressId], references: [id])
+  estado        EstadoPedido         @relation(fields: [estadoId], references: [id])
+  tipoEntrega   TipoEntrega          @relation(fields: [tipoEntregaId], references: [id])
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
   payment       Payment?
@@ -311,34 +326,37 @@ model OrderItemChoice {
 }
 
 model OrderStatusHistory {
-  id        String      @id @default(uuid())
+  id        String   @id @default(uuid())
   orderId   String
-  status    OrderStatus
+  estadoId  Int      @map("estado_id")
   note      String?
-  changedAt DateTime    @default(now())
+  changedAt DateTime @default(now())
   changedBy String?
 
-  order Order @relation(fields: [orderId], references: [id])
+  order  Order        @relation(fields: [orderId], references: [id])
+  estado EstadoPedido @relation(fields: [estadoId], references: [id])
 
   @@map("order_status_history")
 }
 
 model Payment {
-  id            String        @id @default(uuid())
-  orderId       String        @unique
+  id            String   @id @default(uuid())
+  orderId       String   @unique
   userId        String
-  method        PaymentMethod
-  status        PaymentStatus @default(PENDIENTE)
-  amount        Decimal       @db.Decimal(10, 2)
-  currency      String        @default("USD")
+  metodoId      Int      @map("metodo_id")
+  estadoId      Int      @map("estado_id")
+  amount        Decimal  @db.Decimal(10, 2)
+  currency      String   @default("USD")
   transactionId String?
   receipt       String?
   paidAt        DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  order Order @relation(fields: [orderId], references: [id])
-  user  User  @relation(fields: [userId], references: [id])
+  order  Order      @relation(fields: [orderId], references: [id])
+  user   User       @relation(fields: [userId], references: [id])
+  metodo MetodoPago @relation(fields: [metodoId], references: [id])
+  estado EstadoPago @relation(fields: [estadoId], references: [id])
 
   @@map("payments")
 }
@@ -359,10 +377,11 @@ model Review {
 }
 
 model Tag {
-  id   String  @id @default(uuid())
-  name String  @unique
-  type TagType
+  id     String @id @default(uuid())
+  name   String @unique
+  tipoId Int    @map("tipo_id")
 
+  tipo        TipoTag         @relation(fields: [tipoId], references: [id])
   products    ProductTag[]
   restaurants RestaurantTag[]
 

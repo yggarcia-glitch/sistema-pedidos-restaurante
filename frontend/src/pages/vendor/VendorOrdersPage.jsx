@@ -68,7 +68,7 @@ export default function VendorOrdersPage() {
   };
 
   const activeOrders = orders.filter((o) =>
-    ['PENDIENTE', 'CONFIRMADO', 'EN_PREPARACION', 'LISTO'].includes(o.status),
+    ['PENDIENTE', 'CONFIRMADO', 'EN_PREPARACION', 'LISTO'].includes(o.estado?.nombre),
   );
 
   if (loading) return <PageSpinner />;
@@ -82,7 +82,7 @@ export default function VendorOrdersPage() {
         {/* Kanban */}
         <div className="grid md:grid-cols-3 gap-4">
           {COLUMNS.map((col) => {
-            const colOrders = activeOrders.filter((o) => col.statuses.includes(o.status));
+            const colOrders = activeOrders.filter((o) => col.statuses.includes(o.estado?.nombre));
             return (
               <div key={col.label}>
                 <div className="flex items-center gap-2 mb-3">
@@ -114,16 +114,16 @@ export default function VendorOrdersPage() {
                       </div>
                       <p className="text-sm font-bold text-text mb-3">${Number(order.total).toFixed(2)}</p>
                       <div className="flex gap-2">
-                        {NEXT_STATUS[order.status] && (
+                        {NEXT_STATUS[order.estado?.nombre] && (
                           <Button
                             size="sm"
                             className="flex-1"
-                            onClick={() => handleStatusChange(order.id, NEXT_STATUS[order.status])}
+                            onClick={() => handleStatusChange(order.id, NEXT_STATUS[order.estado?.nombre])}
                           >
-                            {ACTION_LABELS[order.status]}
+                            {ACTION_LABELS[order.estado?.nombre]}
                           </Button>
                         )}
-                        {order.status === 'PENDIENTE' && (
+                        {order.estado?.nombre === 'PENDIENTE' && (
                           <Button
                             size="sm"
                             variant="danger"

@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ConflictException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -10,14 +11,16 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { Role } from '../common/enums/role.enum';
 
-// Campos seguros que se retornan al cliente (nunca password ni refreshToken)
+// Campos seguros que se retornan al cliente (nunca password ni refreshToken).
+// El rol se devuelve como objeto { id, nombre } (tabla `roles`).
 const SAFE_SELECT = {
   id: true,
   name: true,
   email: true,
   phone: true,
-  role: true,
+  rol: { select: { id: true, nombre: true } },
   isActive: true,
   createdAt: true,
   updatedAt: true,
@@ -41,18 +44,27 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
+    // Resuelve el rol (string) a su fila en la tabla `roles`.
+    const rolNombre = dto.role ?? Role.CLIENTE;
+    const rol = await this.prisma.rol.findUnique({
+      where: { nombre: rolNombre },
+    });
+    if (!rol) {
+      throw new BadRequestException(`Rol inválido: ${rolNombre}`);
+    }
+
     const user = await this.prisma.user.create({
       data: {
         name: dto.name,
         email: dto.email,
         password: hashedPassword,
         phone: dto.phone,
-        role: dto.role,
+        rolId: rol.id,
       },
       select: SAFE_SELECT,
     });
 
-    const tokens = await this.generarTokens(user.id, user.email, user.role);
+    const tokens = await this.generarTokens(user.id, user.email, user.rol.nombre);
     await this.guardarRefreshToken(user.id, tokens.refreshToken);
 
     return { user, ...tokens };
@@ -61,6 +73,7 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
+      include: { rol: { select: { id: true, nombre: true } } },
     });
 
     // Mensaje genérico para no revelar si el email existe
@@ -73,9 +86,9 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    const { password, refreshToken, ...safeUser } = user;
+    const { password, refreshToken, rolId, ...safeUser } = user;
 
-    const tokens = await this.generarTokens(user.id, user.email, user.role);
+    const tokens = await this.generarTokens(user.id, user.email, user.rol.nombre);
     await this.guardarRefreshToken(user.id, tokens.refreshToken);
 
     return { user: safeUser, ...tokens };

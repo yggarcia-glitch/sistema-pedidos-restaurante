@@ -2,19 +2,20 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Role } from '../common/enums/role.enum';
 
-// Nunca retornar password ni refreshToken
+// Nunca retornar password ni refreshToken. El rol va como objeto { id, nombre }.
 const SAFE_SELECT = {
   id: true,
   name: true,
   email: true,
   phone: true,
-  role: true,
+  rol: { select: { id: true, nombre: true } },
   isActive: true,
   createdAt: true,
   updatedAt: true,
@@ -62,12 +63,19 @@ export class UsersService {
       throw new NotFoundException(`Usuario con id "${id}" no encontrado`);
     }
 
-    const data: any = { ...dto };
+    // `role` (string) se resuelve aparte a rolId; nunca va directo al update.
+    const { role, ...rest } = dto as any;
+    const data: any = { ...rest };
 
     // Solo ADMIN puede cambiar el rol o desactivar usuarios
     if (requesterRole !== Role.ADMIN) {
-      delete data.role;
       delete data.isActive;
+    } else if (role) {
+      const rol = await this.prisma.rol.findUnique({ where: { nombre: role } });
+      if (!rol) {
+        throw new BadRequestException(`Rol inválido: ${role}`);
+      }
+      data.rolId = rol.id;
     }
 
     // Si se cambia la contraseña, hashearla

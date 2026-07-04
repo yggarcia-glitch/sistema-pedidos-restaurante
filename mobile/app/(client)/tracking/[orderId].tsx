@@ -84,7 +84,7 @@ export default function TrackingScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>
-          <OrderStatusStepper status={order.status} />
+          <OrderStatusStepper status={order.estado.nombre} />
         </View>
 
         <View style={styles.card}>
@@ -111,7 +111,7 @@ export default function TrackingScreen() {
           </View>
         </View>
 
-        {order.status === OrderStatus.PENDIENTE && (
+        {order.estado.nombre === OrderStatus.PENDIENTE && (
           <Button
             title="Cancelar pedido"
             variant="danger"

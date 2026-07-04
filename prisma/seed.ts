@@ -231,17 +231,67 @@ const RESTAURANTS: RestaurantSeed[] = [
   },
 ];
 
+// Valores de cada catálogo (antes eran enums).
+const CATALOGOS = {
+  roles: ['CLIENTE', 'VENDEDOR', 'ADMIN'],
+  estadosPedido: [
+    'PENDIENTE',
+    'CONFIRMADO',
+    'EN_PREPARACION',
+    'LISTO',
+    'EN_CAMINO',
+    'ENTREGADO',
+    'CANCELADO',
+    'RECHAZADO',
+  ],
+  tiposEntrega: ['DELIVERY', 'PICKUP'],
+  metodosPago: [
+    'EFECTIVO',
+    'TARJETA_CREDITO',
+    'TARJETA_DEBITO',
+    'TRANSFERENCIA',
+    'PAYPAL',
+    'STRIPE',
+  ],
+  estadosPago: ['PENDIENTE', 'COMPLETADO', 'FALLIDO', 'REEMBOLSADO'],
+  tiposTag: ['COMIDA', 'RESTAURANTE'],
+};
+
 async function main() {
   console.log('🌱 Iniciando seed…');
+
+  // 0) Catálogos (tablas que reemplazaron a los enums). Idempotente por `nombre`.
+  const upsertCatalogo = async (
+    model: { upsert: (args: any) => Promise<any> },
+    nombres: string[],
+  ) => {
+    for (const nombre of nombres) {
+      await model.upsert({ where: { nombre }, update: {}, create: { nombre } });
+    }
+  };
+  await upsertCatalogo(prisma.rol, CATALOGOS.roles);
+  await upsertCatalogo(prisma.estadoPedido, CATALOGOS.estadosPedido);
+  await upsertCatalogo(prisma.tipoEntrega, CATALOGOS.tiposEntrega);
+  await upsertCatalogo(prisma.metodoPago, CATALOGOS.metodosPago);
+  await upsertCatalogo(prisma.estadoPago, CATALOGOS.estadosPago);
+  await upsertCatalogo(prisma.tipoTag, CATALOGOS.tiposTag);
+  console.log('  📚 Catálogos poblados');
+
+  // Mapa nombre-de-rol -> id, para asignar rolId a los usuarios.
+  const roles = await prisma.rol.findMany();
+  const rolIdByName: Record<string, number> = Object.fromEntries(
+    roles.map((r) => [r.nombre, r.id]),
+  );
 
   // 1) Usuarios (upsert por email con contraseña hasheada).
   const hashed = await bcrypt.hash(PASSWORD, 10);
   const usersByEmail: Record<string, string> = {};
   for (const u of USERS) {
+    const rolId = rolIdByName[u.role];
     const user = await prisma.user.upsert({
       where: { email: u.email },
-      update: { name: u.name, role: u.role },
-      create: { name: u.name, email: u.email, password: hashed, role: u.role },
+      update: { name: u.name, rolId },
+      create: { name: u.name, email: u.email, password: hashed, rolId },
     });
     usersByEmail[u.email] = user.id;
     console.log(`  👤 ${u.email} (${u.role})`);

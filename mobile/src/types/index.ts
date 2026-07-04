@@ -41,6 +41,13 @@ export enum PaymentStatus {
 // Los Decimal de Prisma llegan serializados como string en el JSON.
 export type Money = string | number;
 
+// Catálogo genérico { id, nombre } (antes eran enums; ahora tablas en el backend).
+// La API devuelve estos objetos; las requests siguen enviando el string `nombre`.
+export interface Catalogo {
+  id: number;
+  nombre: string;
+}
+
 // ─── Modelos ─────────────────────────────────────────────────────────────────
 
 export interface User {
@@ -48,7 +55,7 @@ export interface User {
   name: string;
   email: string;
   phone?: string | null;
-  role: Role;
+  rol: Catalogo; // { id, nombre } — antes `role: Role`
   avatarUrl?: string | null;
   isActive: boolean;
   createdAt: string;
@@ -206,8 +213,8 @@ export interface Payment {
   id: string;
   orderId: string;
   userId: string;
-  method: PaymentMethod;
-  status: PaymentStatus;
+  metodo: Catalogo; // antes `method: PaymentMethod`
+  estado: Catalogo; // antes `status: PaymentStatus`
   amount: Money;
   currency: string;
   transactionId?: string | null;
@@ -222,8 +229,8 @@ export interface Order {
   clientId: string;
   restaurantId: string;
   addressId?: string | null;
-  status: OrderStatus;
-  deliveryType: DeliveryType;
+  estado: Catalogo; // antes `status: OrderStatus`
+  tipoEntrega: Catalogo; // antes `deliveryType: DeliveryType`
   subtotal: Money;
   deliveryFee: Money;
   discount: Money;

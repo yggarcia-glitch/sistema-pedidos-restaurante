@@ -25,6 +25,18 @@ export const ORDER_FLOW: OrderStatus[] = [
   OrderStatus.ENTREGADO,
 ];
 
+// Devuelve la metadata (label + color) de un estado a partir de su nombre.
+// El backend ahora envía el estado como objeto { id, nombre }; este helper
+// acepta el string `nombre` y cae a un default si no lo reconoce.
+export function statusMeta(nombre: string) {
+  return (
+    ORDER_STATUS_META[nombre as OrderStatus] ?? {
+      label: nombre,
+      badge: 'default' as const,
+    }
+  );
+}
+
 // Formatea un valor monetario (Prisma Decimal llega como string).
 export function money(value: string | number | null | undefined): string {
   const n = Number(value ?? 0);

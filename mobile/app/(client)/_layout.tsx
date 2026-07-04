@@ -13,9 +13,9 @@ export default function ClientLayout() {
 
   if (isLoading) return <Spinner />;
   if (!isAuthenticated) return <Redirect href="/(auth)/login" />;
-  // Si el usuario no es cliente, mándalo a su propia sección.
-  if (user?.role === Role.VENDEDOR) return <Redirect href="/(vendor)/dashboard" />;
-  if (user?.role === Role.ADMIN) return <Redirect href="/(admin)/dashboard" />;
+  // La app móvil es solo para clientes; si no lo es, vuelve a la raíz (que
+  // muestra el aviso de gestionar desde la web).
+  if (user?.rol?.nombre !== Role.CLIENTE) return <Redirect href="/" />;
 
   return (
     <Tabs

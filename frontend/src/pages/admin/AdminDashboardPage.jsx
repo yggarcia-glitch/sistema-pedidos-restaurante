@@ -34,7 +34,7 @@ export default function AdminDashboardPage() {
     (o) => new Date(o.createdAt).toDateString() === new Date().toDateString(),
   );
   const todayIncome = todayOrders
-    .filter((o) => o.status === 'ENTREGADO')
+    .filter((o) => o.estado?.nombre === 'ENTREGADO')
     .reduce((s, o) => s + Number(o.total), 0);
 
   if (loading) return <PageSpinner />;
@@ -68,7 +68,7 @@ export default function AdminDashboardPage() {
                 <p className="text-sm font-medium text-text">#{order.id.slice(0, 8).toUpperCase()}</p>
                 <p className="text-xs text-text-secondary">{order.restaurant?.name} · ${Number(order.total).toFixed(2)}</p>
               </div>
-              <Badge color={STATUS_COLORS[order.status] ?? 'gray'}>{order.status}</Badge>
+              <Badge color={STATUS_COLORS[order.estado?.nombre] ?? 'gray'}>{order.estado?.nombre}</Badge>
             </Card>
           ))}
         </div>

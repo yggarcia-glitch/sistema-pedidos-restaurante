@@ -45,10 +45,10 @@ export default function VendorDashboardPage() {
   if (loading) return <PageSpinner />;
 
   const activeOrders = orders.filter((o) =>
-    ['PENDIENTE', 'CONFIRMADO', 'EN_PREPARACION', 'LISTO'].includes(o.status),
+    ['PENDIENTE', 'CONFIRMADO', 'EN_PREPARACION', 'LISTO'].includes(o.estado?.nombre),
   );
   const todayIncome = orders
-    .filter((o) => o.status === 'ENTREGADO' && new Date(o.createdAt).toDateString() === new Date().toDateString())
+    .filter((o) => o.estado?.nombre === 'ENTREGADO' && new Date(o.createdAt).toDateString() === new Date().toDateString())
     .reduce((s, o) => s + Number(o.total), 0);
 
   return (
@@ -80,7 +80,7 @@ export default function VendorDashboardPage() {
           {[
             { label: 'Activos hoy', value: activeOrders.length, icon: '📦' },
             { label: 'Ingresos hoy', value: `$${todayIncome.toFixed(2)}`, icon: '💰' },
-            { label: 'En preparación', value: orders.filter((o) => o.status === 'EN_PREPARACION').length, icon: '👨‍🍳' },
+            { label: 'En preparación', value: orders.filter((o) => o.estado?.nombre === 'EN_PREPARACION').length, icon: '👨‍🍳' },
             { label: 'Total pedidos', value: orders.length, icon: '📋' },
           ].map((kpi) => (
             <Card key={kpi.label} className="p-4 text-center">
@@ -104,7 +104,7 @@ export default function VendorDashboardPage() {
                   <p className="text-xs text-text-secondary">{order.items?.length} ítems · ${Number(order.total).toFixed(2)}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge color={STATUS_COLORS[order.status] ?? 'gray'}>{STATUS_LABELS[order.status] ?? order.status}</Badge>
+                  <Badge color={STATUS_COLORS[order.estado?.nombre] ?? 'gray'}>{STATUS_LABELS[order.estado?.nombre] ?? order.estado?.nombre}</Badge>
                   <Link to="/vendor/orders" className="text-xs text-primary hover:underline">Gestionar →</Link>
                 </div>
               </Card>

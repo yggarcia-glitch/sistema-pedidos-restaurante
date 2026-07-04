@@ -22,7 +22,7 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-4">
           {isAuthenticated ? (
             <>
-              {user?.role === 'CLIENTE' && (
+              {user?.rol?.nombre === 'CLIENTE' && (
                 <>
                   <Link to="/history" className="text-sm text-text-secondary hover:text-text">
                     Mis pedidos
@@ -37,12 +37,12 @@ export function Navbar() {
                   </Link>
                 </>
               )}
-              {user?.role === 'VENDEDOR' && (
+              {user?.rol?.nombre === 'VENDEDOR' && (
                 <Link to="/vendor/dashboard" className="text-sm text-text-secondary hover:text-text">
                   Dashboard
                 </Link>
               )}
-              {user?.role === 'ADMIN' && (
+              {user?.rol?.nombre === 'ADMIN' && (
                 <Link to="/admin/dashboard" className="text-sm text-text-secondary hover:text-text">
                   Admin
                 </Link>

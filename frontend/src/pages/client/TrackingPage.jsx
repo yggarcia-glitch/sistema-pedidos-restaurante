@@ -24,7 +24,7 @@ export default function TrackingPage() {
       const { data } = await ordersApi.findOne(orderId);
       setOrder(data);
       // Detener el polling cuando el pedido ya terminó
-      if (['ENTREGADO', 'CANCELADO', 'RECHAZADO'].includes(data.status)) {
+      if (['ENTREGADO', 'CANCELADO', 'RECHAZADO'].includes(data.estado?.nombre)) {
         clearInterval(pollRef.current);
       }
     } catch {
@@ -71,7 +71,7 @@ export default function TrackingPage() {
         {order && (
           <>
             <div className="bg-white rounded-2xl border border-border p-4 mb-4 overflow-hidden">
-              <OrderStatusStepper currentStatus={order.status} />
+              <OrderStatusStepper currentStatus={order.estado?.nombre} />
             </div>
 
             {/* Ítems del pedido */}
@@ -90,7 +90,7 @@ export default function TrackingPage() {
             </div>
 
             <div className="flex gap-3">
-              {order.status === 'PENDIENTE' && (
+              {order.estado?.nombre === 'PENDIENTE' && (
                 <Button
                   variant="danger"
                   onClick={handleCancel}

@@ -14,7 +14,6 @@ import { Colors } from '@/src/constants/colors';
 import { useAuth } from '@/src/hooks/useAuth';
 import { getApiError } from '@/src/api/axios';
 import { notify } from '@/src/utils/dialog';
-import { Role } from '@/src/types';
 import { Input } from '@/src/components/ui/Input';
 import { Button } from '@/src/components/ui/Button';
 
@@ -36,11 +35,9 @@ export default function LoginScreen() {
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      const user = await login(data.email.trim(), data.password);
-      // Redirección según rol
-      if (user.role === Role.VENDEDOR) router.replace('/(vendor)/dashboard');
-      else if (user.role === Role.ADMIN) router.replace('/(admin)/dashboard');
-      else router.replace('/(client)');
+      await login(data.email.trim(), data.password);
+      // La raíz decide: clientes entran a la app; locales/admin ven el aviso web.
+      router.replace('/');
     } catch (e) {
       notify('Error al iniciar sesión', getApiError(e, 'Credenciales inválidas'));
     } finally {

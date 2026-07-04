@@ -46,7 +46,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Sincroniza el carrito con el backend sólo para clientes autenticados.
   useEffect(() => {
-    if (isAuthenticated && user?.role === Role.CLIENTE) {
+    if (isAuthenticated && user?.rol?.nombre === Role.CLIENTE) {
       fetchCart();
     } else {
       setCart(null);

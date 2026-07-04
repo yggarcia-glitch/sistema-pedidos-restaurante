@@ -11,7 +11,7 @@ export function CartProvider({ children }) {
 
   // Sincroniza carrito con el backend cuando el usuario se autentica
   useEffect(() => {
-    if (isAuthenticated && user?.role === 'CLIENTE') {
+    if (isAuthenticated && user?.rol?.nombre === 'CLIENTE') {
       fetchCart();
     } else {
       setCart(null);

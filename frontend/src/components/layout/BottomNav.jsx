@@ -29,9 +29,9 @@ export function BottomNav() {
   ];
 
   const links =
-    user?.role === 'VENDEDOR'
+    user?.rol?.nombre === 'VENDEDOR'
       ? vendorLinks
-      : user?.role === 'ADMIN'
+      : user?.rol?.nombre === 'ADMIN'
         ? adminLinks
         : clientLinks;
 

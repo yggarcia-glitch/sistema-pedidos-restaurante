@@ -2,11 +2,12 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/src/constants/colors';
-import { ORDER_FLOW, ORDER_STATUS_META } from '@/src/constants/status';
+import { ORDER_FLOW, ORDER_STATUS_META, statusMeta } from '@/src/constants/status';
 import { OrderStatus } from '@/src/types';
 
 interface Props {
-  status: OrderStatus;
+  // Nombre del estado (la API lo envía como objeto { id, nombre }).
+  status: string;
 }
 
 // Stepper horizontal de los 6 estados del flujo feliz.
@@ -21,13 +22,13 @@ export function OrderStatusStepper({ status }: Props) {
       <View style={styles.cancelledBox}>
         <Ionicons name="close-circle" size={22} color={Colors.dangerText} />
         <Text style={styles.cancelledText}>
-          Pedido {ORDER_STATUS_META[status].label.toLowerCase()}
+          Pedido {statusMeta(status).label.toLowerCase()}
         </Text>
       </View>
     );
   }
 
-  const currentIndex = ORDER_FLOW.indexOf(status);
+  const currentIndex = ORDER_FLOW.indexOf(status as OrderStatus);
 
   return (
     <View style={styles.row}>

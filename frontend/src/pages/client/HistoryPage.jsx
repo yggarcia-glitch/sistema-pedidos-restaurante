@@ -35,7 +35,7 @@ export default function HistoryPage() {
 
   // Filtrado local por estado según tab activo
   const filtered = activeTab
-    ? orders.filter((o) => activeTab.split(',').includes(o.status))
+    ? orders.filter((o) => activeTab.split(',').includes(o.estado?.nombre))
     : orders;
 
   return (

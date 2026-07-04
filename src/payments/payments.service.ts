@@ -6,11 +6,28 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '../common/enums/role.enum';
+import { PaymentStatus } from '../common/enums/payment-status.enum';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+
+// Selección estándar de un catálogo { id, nombre }.
+const CATALOGO = { select: { id: true, nombre: true } };
 
 @Injectable()
 export class PaymentsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  // ── Helpers para resolver el nombre de catálogo a su id (FK) ────────────────
+  private async metodoPagoId(nombre: string): Promise<number> {
+    const m = await this.prisma.metodoPago.findUnique({ where: { nombre } });
+    if (!m) throw new BadRequestException(`Método de pago inválido: ${nombre}`);
+    return m.id;
+  }
+
+  private async estadoPagoId(nombre: string): Promise<number> {
+    const e = await this.prisma.estadoPago.findUnique({ where: { nombre } });
+    if (!e) throw new BadRequestException(`Estado de pago inválido: ${nombre}`);
+    return e.id;
+  }
 
   async create(userId: string, dto: CreatePaymentDto) {
     const order = await this.prisma.order.findUnique({
@@ -25,20 +42,29 @@ export class PaymentsService {
       throw new BadRequestException('Este pedido ya tiene un pago registrado');
     }
 
+    const metodoId = await this.metodoPagoId(dto.method);
+    const estadoId = await this.estadoPagoId(PaymentStatus.PENDIENTE);
+
     return this.prisma.payment.create({
       data: {
         orderId: dto.orderId,
         userId,
-        method: dto.method as any,
+        metodoId,
+        estadoId,
         amount: order.total,
       },
+      include: { metodo: CATALOGO, estado: CATALOGO },
     });
   }
 
   async findByOrderId(orderId: string, userId: string, userRole: string) {
     const payment = await this.prisma.payment.findFirst({
       where: { orderId },
-      include: { order: { select: { clientId: true } } },
+      include: {
+        order: { select: { clientId: true } },
+        metodo: CATALOGO,
+        estado: CATALOGO,
+      },
     });
     if (!payment) throw new NotFoundException('Pago no encontrado');
 
@@ -50,15 +76,21 @@ export class PaymentsService {
   }
 
   async confirm(id: string) {
-    const payment = await this.prisma.payment.findUnique({ where: { id } });
+    const payment = await this.prisma.payment.findUnique({
+      where: { id },
+      include: { estado: CATALOGO },
+    });
     if (!payment) throw new NotFoundException('Pago no encontrado');
-    if (payment.status === 'COMPLETADO') {
+    if (payment.estado.nombre === PaymentStatus.COMPLETADO) {
       throw new BadRequestException('El pago ya fue confirmado');
     }
 
+    const completadoId = await this.estadoPagoId(PaymentStatus.COMPLETADO);
+
     return this.prisma.payment.update({
       where: { id },
-      data: { status: 'COMPLETADO' as any, paidAt: new Date() },
+      data: { estadoId: completadoId, paidAt: new Date() },
+      include: { metodo: CATALOGO, estado: CATALOGO },
     });
   }
 }

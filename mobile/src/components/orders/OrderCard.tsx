@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/src/constants/colors';
-import { money, ORDER_STATUS_META } from '@/src/constants/status';
+import { money, statusMeta } from '@/src/constants/status';
 import { Order } from '@/src/types';
 import { Badge } from '@/src/components/ui/Badge';
 
@@ -13,7 +13,7 @@ interface Props {
 }
 
 export function OrderCard({ order, onPress, onRepeat }: Props) {
-  const meta = ORDER_STATUS_META[order.status];
+  const meta = statusMeta(order.estado.nombre);
   const date = new Date(order.createdAt).toLocaleDateString('es-EC', {
     day: '2-digit',
     month: 'short',

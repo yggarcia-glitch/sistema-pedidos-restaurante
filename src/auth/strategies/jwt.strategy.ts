@@ -23,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         name: true,
         email: true,
         phone: true,
-        role: true,
+        rol: { select: { id: true, nombre: true } },
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -34,7 +34,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('Token inválido o usuario inactivo');
     }
 
-    // El objeto retornado queda disponible en request.user
-    return user;
+    // request.user expone `rol` (objeto) y `role` (string) para que los guards
+    // y decoradores @Roles() sigan comparando por nombre.
+    return { ...user, role: user.rol.nombre };
   }
 }

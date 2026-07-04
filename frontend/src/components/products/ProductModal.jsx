@@ -33,7 +33,7 @@ export function ProductModal({ product, open, onClose }) {
   };
 
   const handleAdd = async () => {
-    if (!isAuthenticated || user?.role !== 'CLIENTE') {
+    if (!isAuthenticated || user?.rol?.nombre !== 'CLIENTE') {
       navigate('/login');
       return;
     }
