@@ -1,0 +1,231 @@
+import React, { useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Link, useRouter } from 'expo-router';
+import { Controller, useForm } from 'react-hook-form';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Colors } from '@/src/constants/colors';
+import { useAuth } from '@/src/hooks/useAuth';
+import { getApiError } from '@/src/api/axios';
+import { notify } from '@/src/utils/dialog';
+import { Role } from '@/src/types';
+import { Input } from '@/src/components/ui/Input';
+import { Button } from '@/src/components/ui/Button';
+
+interface FormData {
+  name: string;
+  email: string;
+  password: string;
+  phone: string;
+}
+
+export default function RegisterScreen() {
+  const { register } = useAuth();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  // Rol elegible al registrarse (CLIENTE o VENDEDOR).
+  const [role, setRole] = useState<Role>(Role.CLIENTE);
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({
+    defaultValues: { name: '', email: '', password: '', phone: '' },
+  });
+
+  const onSubmit = async (data: FormData) => {
+    setLoading(true);
+    try {
+      const user = await register({
+        name: data.name.trim(),
+        email: data.email.trim(),
+        password: data.password,
+        phone: data.phone.trim() || undefined,
+        role,
+      });
+      if (user.role === Role.VENDEDOR) router.replace('/(vendor)/dashboard');
+      else router.replace('/(client)');
+    } catch (e) {
+      notify('Error al registrarse', getApiError(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.title}>Crear cuenta</Text>
+          <Text style={styles.subtitle}>Regístrate para hacer tus pedidos</Text>
+
+          <Controller
+            control={control}
+            name="name"
+            rules={{ required: 'El nombre es obligatorio' }}
+            render={({ field: { onChange, onBlur, value } }) => (
+              <Input
+                label="Nombre"
+                placeholder="Tu nombre"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                error={errors.name?.message}
+              />
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="email"
+            rules={{
+              required: 'El correo es obligatorio',
+              pattern: { value: /^\S+@\S+\.\S+$/, message: 'Correo inválido' },
+            }}
+            render={({ field: { onChange, onBlur, value } }) => (
+              <Input
+                label="Correo"
+                placeholder="tucorreo@ejemplo.com"
+                autoCapitalize="none"
+                keyboardType="email-address"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                error={errors.email?.message}
+              />
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="phone"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <Input
+                label="Teléfono (opcional)"
+                placeholder="09XXXXXXXX"
+                keyboardType="phone-pad"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+              />
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="password"
+            rules={{
+              required: 'La contraseña es obligatoria',
+              minLength: { value: 6, message: 'Mínimo 6 caracteres' },
+            }}
+            render={({ field: { onChange, onBlur, value } }) => (
+              <Input
+                label="Contraseña"
+                placeholder="••••••"
+                secureTextEntry
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                error={errors.password?.message}
+              />
+            )}
+          />
+
+          {/* Selector de rol */}
+          <Text style={styles.roleLabel}>Tipo de cuenta</Text>
+          <View style={styles.roleRow}>
+            <RoleOption
+              label="Cliente"
+              active={role === Role.CLIENTE}
+              onPress={() => setRole(Role.CLIENTE)}
+            />
+            <RoleOption
+              label="Vendedor"
+              active={role === Role.VENDEDOR}
+              onPress={() => setRole(Role.VENDEDOR)}
+            />
+          </View>
+
+          <Button
+            title="Registrarme"
+            onPress={handleSubmit(onSubmit)}
+            loading={loading}
+            fullWidth
+            style={{ marginTop: 8 }}
+          />
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>¿Ya tienes cuenta? </Text>
+            <Link href="/(auth)/login" style={styles.link}>
+              Inicia sesión
+            </Link>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+function RoleOption({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.roleOption, active && styles.roleOptionActive]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <Text style={[styles.roleText, active && styles.roleTextActive]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: Colors.background },
+  flex: { flex: 1 },
+  container: { padding: 24, flexGrow: 1, justifyContent: 'center' },
+  title: { fontSize: 26, fontWeight: '800', color: Colors.text, textAlign: 'center' },
+  subtitle: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  roleLabel: { fontSize: 14, fontWeight: '600', color: Colors.text, marginBottom: 8 },
+  roleRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  roleOption: {
+    flex: 1,
+    height: 46,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+  },
+  roleOptionActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryLight },
+  roleText: { color: Colors.textSecondary, fontWeight: '700' },
+  roleTextActive: { color: Colors.primary },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
+  footerText: { color: Colors.textSecondary },
+  link: { color: Colors.primary, fontWeight: '700' },
+});
