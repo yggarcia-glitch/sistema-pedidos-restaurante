@@ -1,0 +1,392 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  CLIENTE
+  VENDEDOR
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDIENTE
+  CONFIRMADO
+  EN_PREPARACION
+  LISTO
+  EN_CAMINO
+  ENTREGADO
+  CANCELADO
+  RECHAZADO
+}
+
+enum DeliveryType {
+  DELIVERY
+  PICKUP
+}
+
+enum PaymentMethod {
+  EFECTIVO
+  TARJETA_CREDITO
+  TARJETA_DEBITO
+  TRANSFERENCIA
+  PAYPAL
+  STRIPE
+}
+
+enum PaymentStatus {
+  PENDIENTE
+  COMPLETADO
+  FALLIDO
+  REEMBOLSADO
+}
+
+enum TagType {
+  COMIDA
+  RESTAURANTE
+}
+
+// ─── Modelos ─────────────────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  password     String
+  phone        String?
+  role         Role      @default(CLIENTE)
+  avatarUrl    String?
+  isActive     Boolean   @default(true)
+  refreshToken String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  addresses  Address[]
+  restaurant Restaurant?
+  cart       Cart?
+  orders     Order[]
+  reviews    Review[]
+  payments   Payment[]
+
+  @@map("users")
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  label     String
+  street    String
+  city      String
+  province  String
+  zipCode   String?
+  latitude  Float
+  longitude Float
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user   User    @relation(fields: [userId], references: [id])
+  orders Order[]
+
+  @@map("addresses")
+}
+
+model Restaurant {
+  id           String   @id @default(uuid())
+  ownerId      String   @unique
+  name         String
+  description  String?
+  logoUrl      String?
+  coverUrl     String?
+  phone        String?
+  email        String?
+  street       String
+  city         String
+  province     String
+  latitude     Float
+  longitude    Float
+  isOpen       Boolean  @default(true)
+  isActive     Boolean  @default(true)
+  deliveryTime Int?
+  deliveryFee  Decimal  @default(0) @db.Decimal(10, 2)
+  minOrder     Decimal  @default(0) @db.Decimal(10, 2)
+  rating       Float    @default(0)
+  totalReviews Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  owner      User                 @relation(fields: [ownerId], references: [id])
+  categories Category[]
+  products   Product[]
+  orders     Order[]
+  reviews    Review[]
+  schedules  RestaurantSchedule[]
+  tags       RestaurantTag[]
+
+  @@map("restaurants")
+}
+
+model RestaurantSchedule {
+  id           String     @id @default(uuid())
+  restaurantId String
+  dayOfWeek    Int
+  openTime     String
+  closeTime    String
+  isClosed     Boolean    @default(false)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@map("restaurant_schedules")
+}
+
+model Category {
+  id           String     @id @default(uuid())
+  restaurantId String
+  name         String
+  description  String?
+  imageUrl     String?
+  sortOrder    Int        @default(0)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  products   Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id           String   @id @default(uuid())
+  restaurantId String
+  categoryId   String
+  name         String
+  description  String?
+  imageUrl     String?
+  price        Decimal  @db.Decimal(10, 2)
+  discountPct  Float    @default(0)
+  isAvailable  Boolean  @default(true)
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant Restaurant      @relation(fields: [restaurantId], references: [id])
+  category   Category        @relation(fields: [categoryId], references: [id])
+  options    ProductOption[]
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+  tags       ProductTag[]
+
+  @@map("products")
+}
+
+model ProductOption {
+  id         String  @id @default(uuid())
+  productId  String
+  name       String
+  isRequired Boolean @default(false)
+  minSelect  Int     @default(0)
+  maxSelect  Int     @default(1)
+
+  product Product               @relation(fields: [productId], references: [id])
+  choices ProductOptionChoice[]
+
+  @@map("product_options")
+}
+
+model ProductOptionChoice {
+  id         String  @id @default(uuid())
+  optionId   String
+  name       String
+  extraPrice Decimal @default(0) @db.Decimal(10, 2)
+
+  option           ProductOption    @relation(fields: [optionId], references: [id])
+  cartItemChoices  CartItemChoice[]
+  orderItemChoices OrderItemChoice[]
+
+  @@map("product_option_choices")
+}
+
+model Cart {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  restaurantId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id])
+  items CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  productId String
+  quantity  Int      @default(1)
+  unitPrice Decimal  @db.Decimal(10, 2)
+  notes     String?
+  createdAt DateTime @default(now())
+
+  cart    Cart                @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product             @relation(fields: [productId], references: [id])
+  choices CartItemChoice[]
+
+  @@map("cart_items")
+}
+
+model CartItemChoice {
+  id         String @id @default(uuid())
+  cartItemId String
+  choiceId   String
+
+  cartItem CartItem            @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
+  choice   ProductOptionChoice @relation(fields: [choiceId], references: [id])
+
+  @@map("cart_item_choices")
+}
+
+model Order {
+  id           String       @id @default(uuid())
+  clientId     String
+  restaurantId String
+  addressId    String?
+  status       OrderStatus  @default(PENDIENTE)
+  deliveryType DeliveryType @default(DELIVERY)
+  subtotal     Decimal      @db.Decimal(10, 2)
+  deliveryFee  Decimal      @default(0) @db.Decimal(10, 2)
+  discount     Decimal      @default(0) @db.Decimal(10, 2)
+  total        Decimal      @db.Decimal(10, 2)
+  notes        String?
+  estimatedTime Int?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  deliveredAt  DateTime?
+
+  client        User                 @relation(fields: [clientId], references: [id])
+  restaurant    Restaurant           @relation(fields: [restaurantId], references: [id])
+  address       Address?             @relation(fields: [addressId], references: [id])
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+  payment       Payment?
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  productId   String
+  productName String
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  subtotal    Decimal  @db.Decimal(10, 2)
+  notes       String?
+
+  order   Order             @relation(fields: [orderId], references: [id])
+  product Product           @relation(fields: [productId], references: [id])
+  choices OrderItemChoice[]
+
+  @@map("order_items")
+}
+
+model OrderItemChoice {
+  id          String  @id @default(uuid())
+  orderItemId String
+  choiceId    String
+  choiceName  String
+  extraPrice  Decimal @db.Decimal(10, 2)
+
+  orderItem OrderItem           @relation(fields: [orderItemId], references: [id])
+  choice    ProductOptionChoice @relation(fields: [choiceId], references: [id])
+
+  @@map("order_item_choices")
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(uuid())
+  orderId   String
+  status    OrderStatus
+  note      String?
+  changedAt DateTime    @default(now())
+  changedBy String?
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("order_status_history")
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  orderId       String        @unique
+  userId        String
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDIENTE)
+  amount        Decimal       @db.Decimal(10, 2)
+  currency      String        @default("USD")
+  transactionId String?
+  receipt       String?
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@map("payments")
+}
+
+model Review {
+  id           String   @id @default(uuid())
+  userId       String
+  restaurantId String
+  orderId      String?
+  rating       Int
+  comment      String?
+  createdAt    DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id])
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@map("reviews")
+}
+
+model Tag {
+  id   String  @id @default(uuid())
+  name String  @unique
+  type TagType
+
+  products    ProductTag[]
+  restaurants RestaurantTag[]
+
+  @@map("tags")
+}
+
+model ProductTag {
+  productId String
+  tagId     String
+
+  product Product @relation(fields: [productId], references: [id])
+  tag     Tag     @relation(fields: [tagId], references: [id])
+
+  @@id([productId, tagId])
+  @@map("product_tags")
+}
+
+model RestaurantTag {
+  restaurantId String
+  tagId        String
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  tag        Tag        @relation(fields: [tagId], references: [id])
+
+  @@id([restaurantId, tagId])
+  @@map("restaurant_tags")
+}

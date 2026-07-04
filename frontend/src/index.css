@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-text font-sans;
+  }
+}
+
+/* Leaflet fix: sin esto los tiles del mapa no se renderizan */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+}

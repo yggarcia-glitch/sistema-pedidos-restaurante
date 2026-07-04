@@ -1,0 +1,13 @@
+{
+  "id": "restaurante-local-env",
+  "name": "Restaurante - Local",
+  "values": [
+    { "key": "baseUrl",       "value": "http://localhost:3000/api", "enabled": true },
+    { "key": "accessToken",   "value": "",                          "enabled": true },
+    { "key": "refreshToken",  "value": "",                          "enabled": true },
+    { "key": "restaurantId",  "value": "",                          "enabled": true },
+    { "key": "categoryId",    "value": "",                          "enabled": true },
+    { "key": "productId",     "value": "",                          "enabled": true }
+  ],
+  "_postman_variable_scope": "environment"
+}

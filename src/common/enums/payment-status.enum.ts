@@ -1,0 +1,6 @@
+export enum PaymentStatus {
+  PENDIENTE = 'PENDIENTE',
+  COMPLETADO = 'COMPLETADO',
+  FALLIDO = 'FALLIDO',
+  REEMBOLSADO = 'REEMBOLSADO',
+}

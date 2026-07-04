@@ -1,0 +1,458 @@
+{
+  "info": {
+    "name": "Sistema Pedidos Restaurante — Semana 7",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+
+    {
+      "name": "AUTH",
+      "item": [
+        {
+          "name": "Register VENDEDOR",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Juan Vendedor\",\n  \"email\": \"vendedor@test.com\",\n  \"password\": \"123456\",\n  \"phone\": \"0991234567\",\n  \"role\": \"VENDEDOR\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+          }
+        },
+        {
+          "name": "Register CLIENTE",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Maria Cliente\",\n  \"email\": \"cliente@test.com\",\n  \"password\": \"123456\",\n  \"role\": \"CLIENTE\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+          }
+        },
+        {
+          "name": "Login VENDEDOR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  const j = pm.response.json();",
+                  "  pm.environment.set('accessToken', j.accessToken);",
+                  "  pm.environment.set('refreshToken', j.refreshToken);",
+                  "  console.log('Tokens guardados');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"vendedor@test.com\",\n  \"password\": \"123456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Login CLIENTE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  const j = pm.response.json();",
+                  "  pm.environment.set('accessToken', j.accessToken);",
+                  "  pm.environment.set('refreshToken', j.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente@test.com\",\n  \"password\": \"123456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  const j = pm.response.json();",
+                  "  pm.environment.set('accessToken', j.accessToken);",
+                  "  pm.environment.set('refreshToken', j.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{refreshToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "RESTAURANTS",
+      "item": [
+        {
+          "name": "Create Restaurant (VENDEDOR)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.environment.set('restaurantId', pm.response.json().id);",
+                  "  console.log('restaurantId guardado:', pm.response.json().id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"La Parrilla de Juan\",\n  \"description\": \"La mejor parrillada de Cuenca\",\n  \"address\": \"Av. Solano 123, Cuenca\",\n  \"phone\": \"0997654321\",\n  \"imageUrl\": \"https://example.com/parrilla.jpg\",\n  \"latitude\": -2.9006,\n  \"longitude\": -79.0045\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/restaurants", "host": ["{{baseUrl}}"], "path": ["restaurants"] }
+          }
+        },
+        {
+          "name": "Get All Restaurants",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/restaurants?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["restaurants"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "city", "value": "Cuenca", "disabled": true },
+                { "key": "isOpen", "value": "true", "disabled": true },
+                { "key": "minRating", "value": "4", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Nearby Restaurants",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/restaurants/nearby?lat=-2.9006&lng=-79.0045&radiusKm=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["restaurants", "nearby"],
+              "query": [
+                { "key": "lat", "value": "-2.9006" },
+                { "key": "lng", "value": "-79.0045" },
+                { "key": "radiusKm", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Restaurant by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/restaurants/{{restaurantId}}", "host": ["{{baseUrl}}"], "path": ["restaurants", "{{restaurantId}}"] }
+          }
+        },
+        {
+          "name": "Update Restaurant",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"La mejor parrillada de Cuenca — nueva descripción\",\n  \"phone\": \"0991111111\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/restaurants/{{restaurantId}}", "host": ["{{baseUrl}}"], "path": ["restaurants", "{{restaurantId}}"] }
+          }
+        },
+        {
+          "name": "Toggle Open",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/restaurants/{{restaurantId}}/toggle-open", "host": ["{{baseUrl}}"], "path": ["restaurants", "{{restaurantId}}", "toggle-open"] }
+          }
+        },
+        {
+          "name": "Set Schedules",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schedules\": [\n    { \"dayOfWeek\": 0, \"openTime\": \"00:00\", \"closeTime\": \"00:00\", \"isClosed\": true },\n    { \"dayOfWeek\": 1, \"openTime\": \"09:00\", \"closeTime\": \"22:00\" },\n    { \"dayOfWeek\": 2, \"openTime\": \"09:00\", \"closeTime\": \"22:00\" },\n    { \"dayOfWeek\": 3, \"openTime\": \"09:00\", \"closeTime\": \"22:00\" },\n    { \"dayOfWeek\": 4, \"openTime\": \"09:00\", \"closeTime\": \"22:00\" },\n    { \"dayOfWeek\": 5, \"openTime\": \"09:00\", \"closeTime\": \"23:00\" },\n    { \"dayOfWeek\": 6, \"openTime\": \"10:00\", \"closeTime\": \"23:00\" }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/restaurants/{{restaurantId}}/schedules", "host": ["{{baseUrl}}"], "path": ["restaurants", "{{restaurantId}}", "schedules"] }
+          }
+        },
+        {
+          "name": "Get Schedules",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/restaurants/{{restaurantId}}/schedules", "host": ["{{baseUrl}}"], "path": ["restaurants", "{{restaurantId}}", "schedules"] }
+          }
+        },
+        {
+          "name": "Delete Restaurant (ADMIN)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/restaurants/{{restaurantId}}", "host": ["{{baseUrl}}"], "path": ["restaurants", "{{restaurantId}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "CATEGORIES",
+      "item": [
+        {
+          "name": "Create Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.environment.set('categoryId', pm.response.json().id);",
+                  "  console.log('categoryId guardado:', pm.response.json().id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Carnes a la Parrilla\",\n  \"description\": \"Cortes premium asados al carbón\",\n  \"sortOrder\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/restaurants/{{restaurantId}}/categories", "host": ["{{baseUrl}}"], "path": ["restaurants", "{{restaurantId}}", "categories"] }
+          }
+        },
+        {
+          "name": "Create Category 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bebidas\",\n  \"description\": \"Jugos, gaseosas y más\",\n  \"sortOrder\": 2\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/restaurants/{{restaurantId}}/categories", "host": ["{{baseUrl}}"], "path": ["restaurants", "{{restaurantId}}", "categories"] }
+          }
+        },
+        {
+          "name": "Get Categories",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/restaurants/{{restaurantId}}/categories", "host": ["{{baseUrl}}"], "path": ["restaurants", "{{restaurantId}}", "categories"] }
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Carnes Premium\",\n  \"sortOrder\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["categories", "{{categoryId}}"] }
+          }
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["categories", "{{categoryId}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "PRODUCTS",
+      "item": [
+        {
+          "name": "Create Product (con opciones)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.environment.set('productId', pm.response.json().id);",
+                  "  console.log('productId guardado:', pm.response.json().id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Churrasco Especial\",\n  \"description\": \"400g de lomo fino a la parrilla con papas y ensalada\",\n  \"price\": 15.99,\n  \"discountPct\": 10,\n  \"categoryId\": \"{{categoryId}}\",\n  \"imageUrl\": \"https://example.com/churrasco.jpg\",\n  \"options\": [\n    {\n      \"name\": \"Término de cocción\",\n      \"isRequired\": true,\n      \"maxSelections\": 1,\n      \"choices\": [\n        { \"name\": \"Rojo\",       \"extraPrice\": 0 },\n        { \"name\": \"Medio\",      \"extraPrice\": 0 },\n        { \"name\": \"Bien cocido\",\"extraPrice\": 0 }\n      ]\n    },\n    {\n      \"name\": \"Acompañamiento extra\",\n      \"isRequired\": false,\n      \"maxSelections\": 2,\n      \"choices\": [\n        { \"name\": \"Arroz\",         \"extraPrice\": 1.50 },\n        { \"name\": \"Papas fritas\",  \"extraPrice\": 1.50 },\n        { \"name\": \"Ensalada extra\",\"extraPrice\": 1.00 }\n      ]\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/restaurants/{{restaurantId}}/products", "host": ["{{baseUrl}}"], "path": ["restaurants", "{{restaurantId}}", "products"] }
+          }
+        },
+        {
+          "name": "Create Product (simple, sin opciones)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jugo de Naranja\",\n  \"description\": \"Jugo natural exprimido\",\n  \"price\": 2.50,\n  \"categoryId\": \"{{categoryId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/restaurants/{{restaurantId}}/products", "host": ["{{baseUrl}}"], "path": ["restaurants", "{{restaurantId}}", "products"] }
+          }
+        },
+        {
+          "name": "Get Products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/restaurants/{{restaurantId}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["restaurants", "{{restaurantId}}", "products"],
+              "query": [
+                { "key": "categoryId",   "value": "{{categoryId}}", "disabled": true },
+                { "key": "isAvailable",  "value": "true",           "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] }
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 17.99,\n  \"discountPct\": 5,\n  \"description\": \"450g de lomo fino a la parrilla con papas y ensalada\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] }
+          }
+        },
+        {
+          "name": "Toggle Availability",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/products/{{productId}}/toggle-availability", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}", "toggle-availability"] }
+          }
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] }
+          }
+        }
+      ]
+    }
+
+  ]
+}
