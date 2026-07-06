@@ -1,22 +1,36 @@
 const variants = {
-  primary: 'bg-primary text-white hover:bg-primary-dark disabled:opacity-50',
-  secondary: 'bg-white border border-border text-text hover:bg-background disabled:opacity-50',
-  ghost: 'text-primary hover:bg-primary-light disabled:opacity-50',
-  danger: 'bg-red-500 text-white hover:bg-red-600 disabled:opacity-50',
+  primary: 'bg-primary text-white hover:bg-primary-dark',
+  outline: 'bg-white border border-border text-txt hover:bg-background',
+  danger: 'bg-white border border-red-300 text-red-600 hover:bg-red-50',
 };
 
+// md respeta el spec base (11px 14px, text-sm); sm para botones compactos.
 const sizes = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-6 py-3 text-base',
+  md: 'px-[14px] py-[11px] text-sm',
+  sm: 'px-[12px] py-[7px] text-[11px]',
 };
 
-export function Button({ variant = 'primary', size = 'md', className = '', children, ...props }) {
+export function Button({
+  variant = 'primary',
+  size = 'md',
+  loading = false,
+  fullWidth = false,
+  className = '',
+  children,
+  disabled,
+  ...props
+}) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-colors cursor-pointer ${variants[variant]} ${sizes[size]} ${className}`}
+      disabled={disabled || loading}
+      className={`inline-flex items-center justify-center gap-2 rounded-[10px] font-semibold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+        sizes[size] ?? sizes.md
+      } ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className}`}
       {...props}
     >
+      {loading && (
+        <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+      )}
       {children}
     </button>
   );

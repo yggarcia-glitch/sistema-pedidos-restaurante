@@ -1,29 +1,37 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { ordersApi } from '../../api/orders.api';
-import { Navbar } from '../../components/layout/Navbar';
-import { BottomNav } from '../../components/layout/BottomNav';
 import { OrderStatusStepper } from '../../components/orders/OrderStatusStepper';
-import { Button } from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
 import { PageSpinner } from '../../components/ui/Spinner';
+import { statusMeta } from '../../lib/format';
 
-// Polling cada 10 segundos para detectar cambios de estado del pedido
+// Polling cada 10 segundos para reflejar cambios de estado.
 const POLL_INTERVAL = 10_000;
+
+const TITLES = {
+  PENDIENTE: '¡Tu pedido fue recibido! 🧾',
+  CONFIRMADO: '¡Tu pedido fue confirmado! ✅',
+  EN_PREPARACION: '¡Estamos preparando tu pedido! 👨‍🍳',
+  LISTO: '¡Tu pedido está listo! 📦',
+  EN_CAMINO: '¡Tu pedido está en camino! 🛵',
+  ENTREGADO: '¡Pedido entregado! 🎉',
+  CANCELADO: 'Pedido cancelado',
+  RECHAZADO: 'Pedido rechazado',
+};
 
 export default function TrackingPage() {
   const { orderId } = useParams();
-  const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [cancelling, setCancelling] = useState(false);
   const pollRef = useRef(null);
 
   const fetchOrder = async () => {
     try {
       const { data } = await ordersApi.findOne(orderId);
       setOrder(data);
-      // Detener el polling cuando el pedido ya terminó
       if (['ENTREGADO', 'CANCELADO', 'RECHAZADO'].includes(data.estado?.nombre)) {
         clearInterval(pollRef.current);
       }
@@ -40,78 +48,64 @@ export default function TrackingPage() {
     return () => clearInterval(pollRef.current);
   }, [orderId]);
 
-  const handleCancel = async () => {
-    if (!window.confirm('¿Deseas cancelar este pedido?')) return;
-    setCancelling(true);
-    try {
-      await ordersApi.cancel(orderId);
-      fetchOrder();
-    } catch (err) {
-      setError(err.response?.data?.message ?? 'No se pudo cancelar el pedido');
-    } finally {
-      setCancelling(false);
-    }
-  };
-
   if (loading) return <PageSpinner />;
+  if (error) return <p className="text-center text-[12px] text-red-500 py-16">{error}</p>;
+  if (!order) return null;
+
+  const status = order.estado?.nombre;
+  const meta = statusMeta(status);
+  const eta = order.restaurant?.deliveryTime;
 
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-6">
-      <Navbar />
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        <h1 className="text-xl font-bold text-text mb-1">Seguimiento del pedido</h1>
-        {order && (
-          <p className="text-xs text-text-secondary mb-6">
-            {order.restaurant?.name} · #{order.id.slice(0, 8).toUpperCase()}
-          </p>
-        )}
+    <div className="min-h-screen bg-background">
+      <div className="max-w-xl mx-auto px-4 py-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-[12px]">
+          <h1 className="text-[15px] font-bold text-txt">
+            📦 Pedido #{order.id.slice(0, 4).toUpperCase()}
+          </h1>
+          <Badge type={meta.type}>{meta.label}</Badge>
+        </div>
 
-        {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
+        {/* Título */}
+        <h2 className="text-[15px] font-bold text-txt mb-[12px]">{TITLES[status] ?? 'Seguimiento del pedido'}</h2>
 
-        {order && (
-          <>
-            <div className="bg-white rounded-2xl border border-border p-4 mb-4 overflow-hidden">
-              <OrderStatusStepper currentStatus={order.estado?.nombre} />
+        {/* Imagen */}
+        <div className="h-[100px] rounded-[12px] bg-background border border-border mb-[14px] flex items-center justify-center text-[36px]">
+          🛵
+        </div>
+
+        {/* Stepper */}
+        <OrderStatusStepper currentStatus={status} />
+
+        {/* Repartidor */}
+        <Card className="mb-[10px] flex items-center justify-between">
+          <div className="flex items-center gap-[10px]">
+            <div className="w-[36px] h-[36px] rounded-full bg-primary-light text-primary-dark font-bold text-[12px] flex items-center justify-center">
+              CM
             </div>
-
-            {/* Ítems del pedido */}
-            <div className="bg-white rounded-2xl border border-border p-4 mb-4">
-              <h2 className="font-semibold text-sm text-text mb-3">Detalle del pedido</h2>
-              {order.items?.map((item) => (
-                <div key={item.id} className="flex justify-between text-sm py-1">
-                  <span className="text-text">{item.quantity}× {item.productName}</span>
-                  <span className="text-text-secondary">${Number(item.subtotal).toFixed(2)}</span>
-                </div>
-              ))}
-              <div className="flex justify-between font-bold text-text border-t border-border mt-2 pt-2 text-sm">
-                <span>Total</span>
-                <span>${Number(order.total).toFixed(2)}</span>
-              </div>
+            <div>
+              <p className="text-[12px] font-bold text-txt">Carlos Morales</p>
+              <p className="text-[10px] text-txt-2">Repartidor · ★ 4.8</p>
             </div>
+          </div>
+          <div className="flex items-center gap-[12px]">
+            <span className="text-[20px] cursor-pointer">📞</span>
+            <span className="text-[20px] cursor-pointer">💬</span>
+          </div>
+        </Card>
 
-            <div className="flex gap-3">
-              {order.estado?.nombre === 'PENDIENTE' && (
-                <Button
-                  variant="danger"
-                  onClick={handleCancel}
-                  disabled={cancelling}
-                  className="flex-1"
-                >
-                  {cancelling ? 'Cancelando...' : 'Cancelar pedido'}
-                </Button>
-              )}
-              <Button
-                variant="secondary"
-                onClick={() => navigate('/history')}
-                className="flex-1"
-              >
-                Mis pedidos
-              </Button>
-            </div>
-          </>
-        )}
+        {/* Tiempo estimado */}
+        <Card className="flex items-center gap-[10px]">
+          <span className="text-[22px]">⏱</span>
+          <div>
+            <p className="text-[10px] text-txt-2">Tiempo estimado</p>
+            <p className="text-[15px] font-bold text-txt">
+              {eta ? `${eta} – ${eta + 5} minutos` : '8 – 12 minutos'}
+            </p>
+          </div>
+        </Card>
       </div>
-      <BottomNav />
     </div>
   );
 }

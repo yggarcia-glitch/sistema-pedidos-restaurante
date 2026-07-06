@@ -1,22 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { productsApi } from '../../api/products.api';
-import { restaurantsApi } from '../../api/restaurants.api';
-import { Navbar } from '../../components/layout/Navbar';
-import { BottomNav } from '../../components/layout/BottomNav';
+import { useMyRestaurant } from '../../hooks/useMyRestaurant';
+import { SidebarLayout } from '../../components/layout/SidebarLayout';
+import { TopBar } from '../../components/layout/TopBar';
+import { CategoryTabs } from '../../components/restaurants/CategoryTabs';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { PageSpinner } from '../../components/ui/Spinner';
+import { money } from '../../lib/format';
 
 export default function VendorMenuPage() {
-  const [restaurant, setRestaurant] = useState(null);
+  const { restaurant, loading: rLoading } = useMyRestaurant();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [activeCatId, setActiveCatId] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -25,14 +26,11 @@ export default function VendorMenuPage() {
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
   useEffect(() => {
-    restaurantsApi.findAll({ limit: 1 }).then(({ data }) => {
-      const r = data.data[0];
-      if (!r) { setLoading(false); return; }
-      setRestaurant(r);
-      setCategories(r.categories ?? []);
-      loadProducts(r.id, null);
-    });
-  }, []);
+    if (!restaurant) return;
+    setCategories(restaurant.categories ?? []);
+    loadProducts(restaurant.id, null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restaurant]);
 
   const loadProducts = (restaurantId, catId) => {
     setLoading(true);
@@ -40,6 +38,11 @@ export default function VendorMenuPage() {
       .findAll(restaurantId, catId ? { categoryId: catId } : {})
       .then(({ data }) => setProducts(data))
       .finally(() => setLoading(false));
+  };
+
+  const changeCat = (catId) => {
+    setActiveCatId(catId);
+    loadProducts(restaurant?.id, catId);
   };
 
   const openCreate = () => { reset({}); setEditing(null); setFormError(''); setModalOpen(true); };
@@ -50,7 +53,7 @@ export default function VendorMenuPage() {
     setFormError('');
     try {
       if (editing) {
-        await productsApi.update(editing.id, data);
+        await productsApi.update(editing.id, { ...data, price: Number(data.price) });
       } else {
         await productsApi.create(restaurant.id, { ...data, price: Number(data.price) });
       }
@@ -74,72 +77,65 @@ export default function VendorMenuPage() {
     loadProducts(restaurant.id, activeCatId);
   };
 
-  if (!restaurant && !loading) {
+  const catTabs = [
+    { value: null, label: 'Todos' },
+    ...categories.map((c) => ({ value: c.id, label: c.name })),
+  ];
+
+  if (!restaurant && !rLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="text-center p-16 text-text-secondary">
-          <p>No tienes un restaurante registrado aún.</p>
+      <SidebarLayout>
+        <div className="p-[18px] text-[12px] text-txt-2">
+          No tienes un restaurante registrado aún.
         </div>
-        <BottomNav />
-      </div>
+      </SidebarLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-6">
-      <Navbar />
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-bold text-text">Mi menú</h1>
-          <Button size="sm" onClick={openCreate}>+ Nuevo producto</Button>
+    <SidebarLayout>
+      <TopBar
+        title="Gestión del menú"
+        subtitle={restaurant?.name}
+        actions={<Button size="sm" onClick={openCreate}>+ Nuevo producto</Button>}
+      />
+      <div className="p-[22px]">
+        <div className="mb-[12px]">
+          <CategoryTabs items={catTabs} active={activeCatId} onChange={changeCat} />
         </div>
 
-        {/* Tabs de categoría */}
-        <div className="flex gap-2 overflow-x-auto pb-1 mb-4">
-          <button
-            onClick={() => { setActiveCatId(null); loadProducts(restaurant?.id, null); }}
-            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium ${!activeCatId ? 'bg-primary text-white' : 'bg-white border border-border text-text-secondary'}`}
-          >
-            Todos
-          </button>
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => { setActiveCatId(cat.id); loadProducts(restaurant?.id, cat.id); }}
-              className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium ${activeCatId === cat.id ? 'bg-primary text-white' : 'bg-white border border-border text-text-secondary'}`}
-            >
-              {cat.name}
-            </button>
-          ))}
-        </div>
-
-        {loading ? (
+        {loading || rLoading ? (
           <PageSpinner />
+        ) : products.length === 0 ? (
+          <p className="text-center text-[12px] text-txt-2 py-8">No hay productos todavía</p>
         ) : (
-          <div className="space-y-2">
-            {products.map((product) => (
-              <Card key={product.id} className="p-3 flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm text-text">{product.name}</p>
-                  <p className="text-xs text-text-secondary">{product.category?.name} · ${Number(product.price).toFixed(2)}</p>
+          products.map((product) => (
+            <div
+              key={product.id}
+              className="bg-white border border-border rounded-[10px] p-[10px] mb-[8px] flex justify-between items-center"
+            >
+              <div className="flex items-center min-w-0">
+                <div className="w-[40px] h-[40px] bg-background rounded-[8px] flex-shrink-0 overflow-hidden">
+                  {product.imageUrl && (
+                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                  )}
                 </div>
-                <Badge color={product.isAvailable ? 'green' : 'gray'}>
-                  {product.isAvailable ? 'Disponible' : 'No disponible'}
-                </Badge>
-                <div className="flex gap-2">
-                  <button onClick={() => handleToggle(product)} className="text-xs text-primary hover:underline">
-                    {product.isAvailable ? 'Desactivar' : 'Activar'}
-                  </button>
-                  <button onClick={() => openEdit(product)} className="text-xs text-text-secondary hover:underline">Editar</button>
-                  <button onClick={() => handleDelete(product)} className="text-xs text-red-400 hover:underline">Eliminar</button>
+                <div className="ml-[10px] min-w-0">
+                  <p className="font-bold text-[13px] text-txt truncate">{product.name}</p>
+                  <p className="text-primary font-bold text-[12px]">{money(product.price)}</p>
                 </div>
-              </Card>
-            ))}
-            {products.length === 0 && (
-              <div className="text-center py-12 text-text-secondary">No hay productos en esta categoría</div>
-            )}
-          </div>
+              </div>
+              <div className="flex items-center gap-[8px] flex-shrink-0">
+                <button onClick={() => handleToggle(product)}>
+                  <Badge type={product.isAvailable ? 'ok' : 'default'}>
+                    {product.isAvailable ? 'Activo' : 'Inactivo'}
+                  </Badge>
+                </button>
+                <span onClick={() => openEdit(product)} className="cursor-pointer">✏️</span>
+                <span onClick={() => handleDelete(product)} className="cursor-pointer">🗑</span>
+              </div>
+            </div>
+          ))
         )}
       </div>
 
@@ -147,26 +143,35 @@ export default function VendorMenuPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <Input label="Nombre" error={errors.name?.message} {...register('name', { required: 'Obligatorio' })} />
           <Input label="Descripción" {...register('description')} />
-          <Input label="Precio" type="number" step="0.01" error={errors.price?.message}
-            {...register('price', { required: 'Obligatorio', min: { value: 0, message: 'Precio inválido' } })} />
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-text">Categoría</label>
-            <select className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-text focus:outline-none focus:ring-2 focus:ring-primary/30"
-              {...register('categoryId', { required: 'Selecciona una categoría' })}>
+          <Input
+            label="Precio"
+            type="number"
+            step="0.01"
+            error={errors.price?.message}
+            {...register('price', { required: 'Obligatorio', min: { value: 0, message: 'Precio inválido' } })}
+          />
+          <div>
+            <label className="block text-[11px] font-medium text-txt-2 mb-1">Categoría</label>
+            <select
+              className="bg-background border border-border rounded-[8px] px-3 py-2 text-[12px] text-txt w-full focus:outline-none focus:border-primary"
+              {...register('categoryId', { required: 'Selecciona una categoría' })}
+            >
               <option value="">Seleccionar...</option>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
             </select>
-            {errors.categoryId && <span className="text-xs text-red-500">{errors.categoryId.message}</span>}
+            {errors.categoryId && (
+              <span className="block text-[10px] text-red-500 mt-1">{errors.categoryId.message}</span>
+            )}
           </div>
           <Input label="URL de imagen (opcional)" {...register('imageUrl')} />
-          {formError && <p className="text-xs text-red-500">{formError}</p>}
-          <Button type="submit" disabled={saving} className="w-full">
-            {saving ? 'Guardando...' : editing ? 'Guardar cambios' : 'Crear producto'}
+          {formError && <p className="text-[10px] text-red-500">{formError}</p>}
+          <Button type="submit" variant="primary" fullWidth loading={saving}>
+            {editing ? 'Guardar cambios' : 'Crear producto'}
           </Button>
         </form>
       </Modal>
-
-      <BottomNav />
-    </div>
+    </SidebarLayout>
   );
 }

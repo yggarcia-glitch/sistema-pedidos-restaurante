@@ -17,6 +17,26 @@ export const Colors = {
   infoText: '#0C447C',
   danger: '#FEE2E2',
   dangerText: '#C0392B',
+  amber: '#F5A623', // estrellas de rating
+} as const;
+
+// Sombra de tarjeta reutilizable (iOS + Android). Se esparce con {...Shadow.card}.
+export const Shadow = {
+  card: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+} as const;
+
+// Radios consistentes con el diseño web (cards 10, inputs 8, pills 999).
+export const Radius = {
+  card: 12,
+  input: 12,
+  pill: 999,
+  logo: 18,
 } as const;
 
 export type ColorKey = keyof typeof Colors;

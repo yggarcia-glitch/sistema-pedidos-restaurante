@@ -71,7 +71,7 @@ export function ProductModal({ product, open, onClose }) {
         />
       )}
       {product.description && (
-        <p className="text-sm text-text-secondary mb-4">{product.description}</p>
+        <p className="text-sm text-txt-2 mb-4">{product.description}</p>
       )}
 
       {/* Opciones del producto */}
@@ -80,7 +80,7 @@ export function ProductModal({ product, open, onClose }) {
           <p className="font-medium text-sm mb-1">
             {opt.name}
             {opt.isRequired && <span className="text-red-500 ml-1">*</span>}
-            <span className="text-xs text-text-secondary ml-1">
+            <span className="text-xs text-txt-2 ml-1">
               {opt.maxSelect > 1 ? `(máx. ${opt.maxSelect})` : ''}
             </span>
           </p>

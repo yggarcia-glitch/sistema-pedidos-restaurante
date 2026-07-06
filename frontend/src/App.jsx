@@ -16,8 +16,8 @@ import ProfilePage from './pages/client/ProfilePage';
 
 // Vendor
 import VendorDashboardPage from './pages/vendor/VendorDashboardPage';
-import VendorOrdersPage from './pages/vendor/VendorOrdersPage';
 import VendorMenuPage from './pages/vendor/VendorMenuPage';
+import VendorSettingsPage from './pages/vendor/VendorSettingsPage';
 
 // Admin
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
@@ -42,8 +42,8 @@ export default function App() {
 
       {/* Rutas de vendedor */}
       <Route path="/vendor/dashboard" element={<PrivateRoute roles={['VENDEDOR']}><VendorDashboardPage /></PrivateRoute>} />
-      <Route path="/vendor/orders" element={<PrivateRoute roles={['VENDEDOR']}><VendorOrdersPage /></PrivateRoute>} />
       <Route path="/vendor/menu" element={<PrivateRoute roles={['VENDEDOR']}><VendorMenuPage /></PrivateRoute>} />
+      <Route path="/vendor/settings" element={<PrivateRoute roles={['VENDEDOR']}><VendorSettingsPage /></PrivateRoute>} />
 
       {/* Rutas de admin */}
       <Route path="/admin/dashboard" element={<PrivateRoute roles={['ADMIN']}><AdminDashboardPage /></PrivateRoute>} />

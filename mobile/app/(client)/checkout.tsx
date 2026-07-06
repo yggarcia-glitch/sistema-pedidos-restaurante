@@ -96,17 +96,18 @@ export default function CheckoutScreen() {
           return (
             <TouchableOpacity
               key={m.value}
-              style={styles.methodRow}
+              style={[styles.methodRow, active && styles.methodRowActive]}
               onPress={() => setMethod(m.value)}
               activeOpacity={0.8}
             >
+              <Ionicons name={m.icon} size={20} color={active ? Colors.primary : Colors.textSecondary} />
+              <Text style={[styles.methodLabel, active && styles.methodLabelActive]}>{m.label}</Text>
+              <View style={{ flex: 1 }} />
               <Ionicons
                 name={active ? 'radio-button-on' : 'radio-button-off'}
                 size={22}
                 color={active ? Colors.primary : Colors.textTertiary}
               />
-              <Ionicons name={m.icon} size={20} color={Colors.textSecondary} />
-              <Text style={styles.methodLabel}>{m.label}</Text>
             </TouchableOpacity>
           );
         })}
@@ -209,7 +210,9 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     marginBottom: 10,
   },
+  methodRowActive: { borderColor: Colors.primary, borderWidth: 2, backgroundColor: Colors.primaryLight },
   methodLabel: { fontSize: 15, color: Colors.text, fontWeight: '600' },
+  methodLabelActive: { color: Colors.primaryDark },
   cardForm: { marginTop: 12 },
   cardRow: { flexDirection: 'row', gap: 12 },
   footer: {

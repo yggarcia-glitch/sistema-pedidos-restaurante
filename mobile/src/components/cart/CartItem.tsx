@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/src/constants/colors';
+import { Colors, Radius, Shadow } from '@/src/constants/colors';
 import { money } from '@/src/constants/status';
 import { CartItem as CartItemType } from '@/src/types';
 
@@ -55,10 +55,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.white,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: Radius.card,
     borderWidth: 1,
     borderColor: Colors.border,
     marginBottom: 10,
+    ...Shadow.card,
   },
   info: { flex: 1, paddingRight: 8 },
   name: { fontSize: 15, fontWeight: '700', color: Colors.text },

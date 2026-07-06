@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { Colors } from '@/src/constants/colors';
+import { Colors, Radius } from '@/src/constants/colors';
 
 interface Props {
   items: { id: string; name: string }[];
@@ -18,11 +18,7 @@ export function CategoryTabs({ items, activeId, onSelect, includeAll = true }: P
       contentContainerStyle={styles.row}
     >
       {includeAll && (
-        <Pill
-          label="Todos"
-          active={activeId === null}
-          onPress={() => onSelect(null)}
-        />
+        <Pill label="Todos" active={activeId === null} onPress={() => onSelect(null)} />
       )}
       {items.map((it) => (
         <Pill
@@ -57,16 +53,23 @@ function Pill({
 }
 
 const styles = StyleSheet.create({
-  row: { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
-  pill: {
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    gap: 8,
+  },
+  pill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: Radius.pill,
     backgroundColor: Colors.white,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   pillActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  pillText: { color: Colors.textSecondary, fontWeight: '600', fontSize: 14 },
+  pillText: { color: Colors.textSecondary, fontWeight: '700', fontSize: 13 },
   pillTextActive: { color: Colors.white },
 });

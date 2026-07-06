@@ -1,32 +1,14 @@
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-
-const STATUS_COLORS = {
-  PENDIENTE: 'yellow',
-  CONFIRMADO: 'blue',
-  EN_PREPARACION: 'orange',
-  LISTO: 'primary',
-  EN_CAMINO: 'blue',
-  ENTREGADO: 'green',
-  CANCELADO: 'red',
-  RECHAZADO: 'red',
-};
-
-const STATUS_LABELS = {
-  PENDIENTE: 'Pendiente',
-  CONFIRMADO: 'Confirmado',
-  EN_PREPARACION: 'En preparación',
-  LISTO: 'Listo',
-  EN_CAMINO: 'En camino',
-  ENTREGADO: 'Entregado',
-  CANCELADO: 'Cancelado',
-  RECHAZADO: 'Rechazado',
-};
+import { Button } from '../ui/Button';
+import { money, statusMeta } from '../../lib/format';
 
 export function OrderCard({ order }) {
-  const { id, restaurant, estado, total, createdAt, items } = order;
-  const status = estado?.nombre; // la API ahora envía el estado como { id, nombre }
+  const { id, restaurant, estado, total, createdAt } = order;
+  const navigate = useNavigate();
+  const meta = statusMeta(estado?.nombre);
+  const isDelivered = estado?.nombre === 'ENTREGADO';
   const date = new Date(createdAt).toLocaleDateString('es-EC', {
     day: '2-digit',
     month: 'short',
@@ -34,31 +16,40 @@ export function OrderCard({ order }) {
   });
 
   return (
-    <Card className="p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="font-semibold text-sm text-text">{restaurant?.name ?? 'Restaurante'}</p>
-          <p className="text-xs text-text-secondary mt-0.5">{date}</p>
-          <p className="text-xs text-text-secondary mt-0.5">
-            {items?.length ?? 0} {items?.length === 1 ? 'ítem' : 'ítems'} • ${Number(total).toFixed(2)}
-          </p>
-        </div>
-        <Badge color={STATUS_COLORS[status] ?? 'gray'}>{STATUS_LABELS[status] ?? status}</Badge>
+    <Card className="mb-[10px]">
+      {/* Fila 1: restaurante + estado */}
+      <div className="flex items-center justify-between mb-[5px]">
+        <p className="font-bold text-[13px] text-txt truncate mr-2">
+          {restaurant?.name ?? 'Restaurante'}
+        </p>
+        <Badge type={meta.type}>{meta.label}</Badge>
       </div>
-      <div className="flex gap-2 mt-3">
-        <Link
-          to={`/tracking/${id}`}
-          className="text-xs text-primary hover:underline"
+
+      {/* Fila 2: fecha + total */}
+      <div className="flex items-center justify-between mb-[10px]">
+        <p className="text-[10px] text-txt-2">{date}</p>
+        <p className="text-[13px] font-bold text-primary">{money(total)}</p>
+      </div>
+
+      {/* Fila 3: acciones */}
+      <div className="flex gap-[6px]">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          onClick={() => navigate(`/tracking/${id}`)}
         >
-          Ver detalle →
-        </Link>
-        {restaurant?.id && (
-          <Link
-            to={`/restaurant/${restaurant.id}`}
-            className="text-xs text-text-secondary hover:underline ml-3"
+          Ver detalle
+        </Button>
+        {isDelivered && restaurant?.id && (
+          <Button
+            variant="primary"
+            size="sm"
+            className="flex-1"
+            onClick={() => navigate(`/restaurant/${restaurant.id}`)}
           >
-            Volver a pedir
-          </Link>
+            Repetir
+          </Button>
         )}
       </div>
     </Card>

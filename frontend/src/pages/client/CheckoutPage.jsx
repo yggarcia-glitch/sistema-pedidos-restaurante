@@ -1,51 +1,44 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
 import { ordersApi } from '../../api/orders.api';
 import { paymentsApi } from '../../api/payments.api';
-import { Navbar } from '../../components/layout/Navbar';
-import { BottomNav } from '../../components/layout/BottomNav';
-import { CartSummary } from '../../components/cart/CartSummary';
+import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useCart } from '../../hooks/useCart';
+import { money } from '../../lib/format';
 
 const PAYMENT_METHODS = [
-  { value: 'EFECTIVO', label: '💵 Efectivo' },
-  { value: 'TARJETA_CREDITO', label: '💳 Tarjeta de crédito' },
-  { value: 'TARJETA_DEBITO', label: '💳 Tarjeta de débito' },
-  { value: 'TRANSFERENCIA', label: '🏦 Transferencia' },
-  { value: 'PAYPAL', label: '🅿️ PayPal' },
+  { value: 'EFECTIVO', icon: '💵', label: 'Efectivo' },
+  { value: 'TARJETA_CREDITO', icon: '💳', label: 'Tarjeta de crédito' },
+  { value: 'TARJETA_DEBITO', icon: '💳', label: 'Tarjeta de débito' },
+  { value: 'TRANSFERENCIA', icon: '🏦', label: 'Transferencia' },
+  { value: 'PAYPAL', icon: '🅿️', label: 'PayPal' },
 ];
 
 export default function CheckoutPage() {
   const { cart, subtotal, fetchCart } = useCart();
   const navigate = useNavigate();
-  const { register, handleSubmit, watch, formState: { errors } } = useForm({
-    defaultValues: { paymentMethod: 'EFECTIVO', deliveryType: 'DELIVERY' },
-  });
+  const [method, setMethod] = useState('EFECTIVO');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const paymentMethod = watch('paymentMethod');
-  const deliveryType = watch('deliveryType');
-  const isCard = ['TARJETA_CREDITO', 'TARJETA_DEBITO'].includes(paymentMethod);
-  const deliveryFee = deliveryType === 'PICKUP' ? 0 : Number(cart?.restaurant?.deliveryFee ?? 0);
+  const items = cart?.items ?? [];
+  const deliveryFee = Number(cart?.restaurant?.deliveryFee ?? 0);
+  const total = subtotal + deliveryFee;
+  const isCard = ['TARJETA_CREDITO', 'TARJETA_DEBITO'].includes(method);
 
-  const onSubmit = async (data) => {
+  if (items.length === 0) {
+    navigate('/cart');
+    return null;
+  }
+
+  const handleSubmit = async () => {
     setError('');
     setLoading(true);
     try {
-      // 1. Crear el pedido desde el carrito
-      const { data: order } = await ordersApi.create({
-        deliveryType: data.deliveryType,
-        notes: data.notes,
-      });
-
-      // 2. Registrar el pago
-      await paymentsApi.create({ orderId: order.id, method: data.paymentMethod });
-
-      // 3. Actualizar el carrito (ya fue vaciado por el backend) y redirigir
+      const { data: order } = await ordersApi.create({ deliveryType: 'DELIVERY' });
+      await paymentsApi.create({ orderId: order.id, method });
       await fetchCart();
       navigate(`/tracking/${order.id}`);
     } catch (err) {
@@ -55,95 +48,86 @@ export default function CheckoutPage() {
     }
   };
 
-  const items = cart?.items ?? [];
-  if (items.length === 0) {
-    navigate('/cart');
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-6">
-      <Navbar />
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        <h1 className="text-xl font-bold text-text mb-4">Confirmar pedido</h1>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-xl mx-auto px-4 py-6">
+        {/* Header */}
+        <div className="flex items-center gap-[10px] mb-[14px]">
+          <button
+            onClick={() => navigate(-1)}
+            className="bg-white rounded-full w-[30px] h-[30px] flex items-center justify-center border border-border text-[14px]"
+          >
+            ←
+          </button>
+          <h1 className="text-[15px] font-bold text-txt">Confirmar pago</h1>
+        </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Tipo de entrega */}
-          <div className="bg-white rounded-2xl border border-border p-4">
-            <h2 className="font-semibold text-sm text-text mb-3">Tipo de entrega</h2>
-            <div className="flex gap-3">
-              {[
-                { value: 'DELIVERY', label: '🛵 Delivery' },
-                { value: 'PICKUP', label: '🏪 Recoger en local' },
-              ].map((opt) => (
-                <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" value={opt.value} {...register('deliveryType')} className="accent-primary" />
-                  <span className="text-sm">{opt.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Resumen del pedido */}
-          <div className="bg-white rounded-2xl border border-border p-4">
-            <h2 className="font-semibold text-sm text-text mb-3">Resumen del pedido</h2>
-            {items.map((item) => (
-              <div key={item.id} className="flex justify-between text-sm py-1">
-                <span className="text-text">
-                  {item.quantity}× {item.product?.name}
-                </span>
-                <span className="text-text-secondary">
-                  ${(Number(item.unitPrice) * item.quantity).toFixed(2)}
-                </span>
+        {/* Método de pago */}
+        <h2 className="text-[11px] font-bold text-txt mb-[10px]">Método de pago</h2>
+        {PAYMENT_METHODS.map((m) => {
+          const selected = method === m.value;
+          return (
+            <div
+              key={m.value}
+              onClick={() => setMethod(m.value)}
+              className={`bg-white border rounded-[10px] p-[10px] mb-[6px] flex justify-between items-center cursor-pointer ${
+                selected ? 'border-primary border-2' : 'border-border'
+              }`}
+            >
+              <div className="flex items-center">
+                <span className="text-[14px]">{m.icon}</span>
+                <span className="text-[12px] text-txt ml-[6px]">{m.label}</span>
               </div>
-            ))}
-          </div>
-
-          {/* Método de pago */}
-          <div className="bg-white rounded-2xl border border-border p-4">
-            <h2 className="font-semibold text-sm text-text mb-3">Método de pago</h2>
-            <div className="space-y-2">
-              {PAYMENT_METHODS.map((m) => (
-                <label key={m.value} className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" value={m.value} {...register('paymentMethod')} className="accent-primary" />
-                  <span className="text-sm">{m.label}</span>
-                </label>
-              ))}
-            </div>
-
-            {/* Campos de tarjeta (solo visual) */}
-            {isCard && (
-              <div className="mt-4 space-y-3 pt-3 border-t border-border">
-                <Input label="Número de tarjeta" placeholder="1234 5678 9012 3456" maxLength={19} {...register('cardNumber')} />
-                <div className="flex gap-3">
-                  <Input label="MM/AA" placeholder="12/26" maxLength={5} {...register('cardExpiry')} />
-                  <Input label="CVV" placeholder="123" maxLength={3} type="password" {...register('cardCvv')} />
-                </div>
+              <div
+                className={`w-[18px] h-[18px] rounded-full flex items-center justify-center ${
+                  selected
+                    ? 'bg-primary border-primary'
+                    : 'border-2 border-border'
+                }`}
+              >
+                {selected && <span className="text-white text-[10px] font-bold">✓</span>}
               </div>
-            )}
+            </div>
+          );
+        })}
+
+        {/* Inputs de tarjeta (solo visual) */}
+        {isCard && (
+          <Card className="mb-[12px] mt-[6px]">
+            <p className="text-[11px] text-txt-2 mb-[6px]">Número de tarjeta</p>
+            <Input placeholder="•••• •••• •••• 4242" className="mb-[6px]" maxLength={19} />
+            <div className="flex gap-[8px]">
+              <Input placeholder="MM/AA" className="flex-1" maxLength={5} />
+              <Input placeholder="CVV" className="flex-1" maxLength={4} type="password" />
+            </div>
+          </Card>
+        )}
+
+        {/* Resumen */}
+        <Card className="mb-[14px] mt-[12px]">
+          <div className="flex items-center justify-between mb-[4px]">
+            <span className="text-[11px] text-txt-2">Subtotal</span>
+            <span className="text-[11px] text-txt">{money(subtotal)}</span>
           </div>
-
-          {/* Nota */}
-          <div className="bg-white rounded-2xl border border-border p-4">
-            <label className="text-sm font-medium text-text block mb-2">Instrucciones especiales</label>
-            <textarea
-              {...register('notes')}
-              placeholder="Sin cebolla, extra salsa..."
-              rows={2}
-              className="w-full px-3 py-2 rounded-xl border border-border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
+          <div className="flex items-center justify-between mb-[4px]">
+            <span className="text-[11px] text-txt-2">Envío</span>
+            <span className="text-[11px] text-txt">
+              {deliveryFee > 0 ? money(deliveryFee) : 'Gratis'}
+            </span>
           </div>
+          <div className="border-t border-border my-[6px]" />
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] font-bold text-txt">Total</span>
+            <span className="text-[16px] font-bold text-primary">{money(total)}</span>
+          </div>
+        </Card>
 
-          <CartSummary subtotal={subtotal} deliveryFee={deliveryFee} />
+        {error && <p className="text-[11px] text-red-500 text-center mb-[10px]">{error}</p>}
 
-          {error && <p className="text-sm text-red-500 text-center">{error}</p>}
-
-          <Button type="submit" disabled={loading} className="w-full" size="lg">
-            {loading ? 'Procesando...' : `Confirmar pedido • $${(subtotal + deliveryFee).toFixed(2)}`}
-          </Button>
-        </form>
+        <Button variant="primary" fullWidth loading={loading} onClick={handleSubmit}>
+          Confirmar pedido · {money(total)}
+        </Button>
       </div>
-      <BottomNav />
     </div>
   );
 }

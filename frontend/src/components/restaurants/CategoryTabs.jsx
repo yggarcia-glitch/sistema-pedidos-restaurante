@@ -1,29 +1,26 @@
-export function CategoryTabs({ categories, activeId, onChange }) {
+// Fila horizontal de chips reutilizable (categorías, filtros, tabs).
+// items: [{ value, label }] | strings. active: value seleccionado.
+export function CategoryTabs({ items = [], active, onChange, className = '' }) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-      <button
-        onClick={() => onChange(null)}
-        className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-          !activeId
-            ? 'bg-primary text-white'
-            : 'bg-white border border-border text-text-secondary hover:border-primary hover:text-primary'
-        }`}
-      >
-        Todos
-      </button>
-      {categories.map((cat) => (
-        <button
-          key={cat.id}
-          onClick={() => onChange(cat.id)}
-          className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-            activeId === cat.id
-              ? 'bg-primary text-white'
-              : 'bg-white border border-border text-text-secondary hover:border-primary hover:text-primary'
-          }`}
-        >
-          {cat.name}
-        </button>
-      ))}
+    <div className={`flex gap-[6px] overflow-x-auto ${className}`}>
+      {items.map((it) => {
+        const value = typeof it === 'object' ? it.value : it;
+        const label = typeof it === 'object' ? it.label : it;
+        const isActive = active === value;
+        return (
+          <button
+            key={value ?? label}
+            onClick={() => onChange(value)}
+            className={`whitespace-nowrap text-[10px] px-[11px] py-[5px] rounded-full border cursor-pointer ${
+              isActive
+                ? 'bg-primary border-primary text-white'
+                : 'border-border text-txt-2'
+            }`}
+          >
+            {label}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -1,17 +1,29 @@
 import React, { useCallback, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import {
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/src/constants/colors';
+import { Colors, Radius } from '@/src/constants/colors';
 import { Order, OrderStatus } from '@/src/types';
 import { ordersApi } from '@/src/api/orders.api';
 import { getApiError } from '@/src/api/axios';
 import { OrderCard } from '@/src/components/orders/OrderCard';
-import { CategoryTabs } from '@/src/components/restaurants/CategoryTabs';
 import { Spinner } from '@/src/components/ui/Spinner';
 
 type Filter = 'todos' | 'entregados' | 'cancelados';
+
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'entregados', label: 'Entregados' },
+  { id: 'cancelados', label: 'Cancelados' },
+];
 
 export default function HistoryScreen() {
   const router = useRouter();
@@ -56,16 +68,23 @@ export default function HistoryScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Text style={styles.header}>Mis pedidos</Text>
-      <CategoryTabs
-        includeAll={false}
-        activeId={filter}
-        onSelect={(id) => setFilter((id as Filter) ?? 'todos')}
-        items={[
-          { id: 'todos', name: 'Todos' },
-          { id: 'entregados', name: 'Entregados' },
-          { id: 'cancelados', name: 'Cancelados' },
-        ]}
-      />
+      <View style={styles.filters}>
+        {FILTERS.map((f) => {
+          const active = filter === f.id;
+          return (
+            <TouchableOpacity
+              key={f.id}
+              onPress={() => setFilter(f.id)}
+              activeOpacity={0.8}
+              style={[styles.filterBtn, active && styles.filterBtnActive]}
+            >
+              <Text style={[styles.filterText, active && styles.filterTextActive]}>
+                {f.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
       <FlatList
         data={filtered}
         keyExtractor={(o) => o.id}
@@ -114,6 +133,26 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   list: { padding: 16 },
+  filters: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  filterBtn: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  filterBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  filterText: { fontSize: 13, fontWeight: '700', color: Colors.textSecondary },
+  filterTextActive: { color: Colors.white },
   empty: { alignItems: 'center', paddingVertical: 60, gap: 12 },
   emptyText: { color: Colors.textSecondary, fontSize: 15, textAlign: 'center' },
 });

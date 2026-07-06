@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Colors } from '@/src/constants/colors';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors, Radius, Shadow } from '@/src/constants/colors';
 import { money } from '@/src/constants/status';
 import { Product } from '@/src/types';
 
@@ -36,16 +37,24 @@ export function ProductCard({ product, onPress }: Props) {
         </View>
         {!product.isAvailable && <Text style={styles.soldOut}>No disponible</Text>}
       </View>
-      <Image
-        source={{
-          uri:
-            product.imageUrl ??
-            `https://placehold.co/200x200/FEF0EA/E85D26/png?text=${encodeURIComponent(
-              product.name.slice(0, 8),
-            )}`,
-        }}
-        style={styles.image}
-      />
+
+      <View style={styles.imageWrap}>
+        <Image
+          source={{
+            uri:
+              product.imageUrl ??
+              `https://placehold.co/200x200/FEF0EA/E85D26/png?text=${encodeURIComponent(
+                product.name.slice(0, 8),
+              )}`,
+          }}
+          style={styles.image}
+        />
+        {product.isAvailable && (
+          <View style={styles.addBtn}>
+            <Ionicons name="add" size={18} color={Colors.white} />
+          </View>
+        )}
+      </View>
     </TouchableOpacity>
   );
 }
@@ -53,22 +62,38 @@ export function ProductCard({ product, onPress }: Props) {
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    padding: 12,
+    padding: 14,
     backgroundColor: Colors.white,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+    alignItems: 'center',
   },
   unavailable: { opacity: 0.55 },
   info: { flex: 1, paddingRight: 12 },
   name: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  desc: { fontSize: 13, color: Colors.textSecondary, marginTop: 4 },
+  desc: { fontSize: 13, color: Colors.textSecondary, marginTop: 4, lineHeight: 18 },
   priceRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 8 },
-  price: { fontSize: 15, fontWeight: '700', color: Colors.primary },
+  price: { fontSize: 15, fontWeight: '800', color: Colors.primary },
   oldPrice: {
     fontSize: 13,
     color: Colors.textTertiary,
     textDecorationLine: 'line-through',
   },
-  soldOut: { fontSize: 12, color: Colors.dangerText, marginTop: 4 },
-  image: { width: 84, height: 84, borderRadius: 8, backgroundColor: Colors.border },
+  soldOut: { fontSize: 12, color: Colors.dangerText, marginTop: 4, fontWeight: '600' },
+  imageWrap: { position: 'relative' },
+  image: { width: 88, height: 88, borderRadius: Radius.card, backgroundColor: Colors.border },
+  addBtn: {
+    position: 'absolute',
+    bottom: -8,
+    right: -8,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: Colors.white,
+    ...Shadow.card,
+  },
 });

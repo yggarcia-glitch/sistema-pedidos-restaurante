@@ -10,12 +10,13 @@ import {
 import { Link, useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '@/src/constants/colors';
+import { Colors, Radius, Shadow } from '@/src/constants/colors';
 import { useAuth } from '@/src/hooks/useAuth';
 import { getApiError } from '@/src/api/axios';
 import { notify } from '@/src/utils/dialog';
 import { Input } from '@/src/components/ui/Input';
 import { Button } from '@/src/components/ui/Button';
+import { BrandMark } from '@/src/components/ui/BrandMark';
 
 interface FormData {
   email: string;
@@ -55,57 +56,61 @@ export default function LoginScreen() {
           contentContainerStyle={styles.container}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.logo}>🍔</Text>
-          <Text style={styles.title}>Sistema de Pedidos</Text>
-          <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
+          <View style={styles.brandWrap}>
+            <BrandMark />
+          </View>
+          <Text style={styles.title}>Bienvenido</Text>
+          <Text style={styles.subtitle}>Ingresa para pedir tu comida favorita</Text>
 
-          <Controller
-            control={control}
-            name="email"
-            rules={{
-              required: 'El correo es obligatorio',
-              pattern: { value: /^\S+@\S+\.\S+$/, message: 'Correo inválido' },
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Correo"
-                placeholder="tucorreo@ejemplo.com"
-                autoCapitalize="none"
-                keyboardType="email-address"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.email?.message}
-              />
-            )}
-          />
+          <View style={styles.card}>
+            <Controller
+              control={control}
+              name="email"
+              rules={{
+                required: 'El correo es obligatorio',
+                pattern: { value: /^\S+@\S+\.\S+$/, message: 'Correo inválido' },
+              }}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  label="Correo electrónico"
+                  placeholder="tucorreo@ejemplo.com"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={errors.email?.message}
+                />
+              )}
+            />
 
-          <Controller
-            control={control}
-            name="password"
-            rules={{
-              required: 'La contraseña es obligatoria',
-              minLength: { value: 6, message: 'Mínimo 6 caracteres' },
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Contraseña"
-                placeholder="••••••"
-                secureTextEntry
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.password?.message}
-              />
-            )}
-          />
+            <Controller
+              control={control}
+              name="password"
+              rules={{
+                required: 'La contraseña es obligatoria',
+                minLength: { value: 6, message: 'Mínimo 6 caracteres' },
+              }}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  label="Contraseña"
+                  placeholder="••••••"
+                  secureTextEntry
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={errors.password?.message}
+                />
+              )}
+            />
 
-          <Button
-            title="Iniciar sesión"
-            onPress={handleSubmit(onSubmit)}
-            loading={loading}
-            fullWidth
-          />
+            <Button
+              title="Iniciar sesión"
+              onPress={handleSubmit(onSubmit)}
+              loading={loading}
+              fullWidth
+            />
+          </View>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>¿No tienes cuenta? </Text>
@@ -123,19 +128,27 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
   flex: { flex: 1 },
   container: { padding: 24, justifyContent: 'center', flexGrow: 1 },
-  logo: { fontSize: 56, textAlign: 'center' },
+  brandWrap: { alignItems: 'center', marginBottom: 16 },
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '800',
     color: Colors.text,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 2,
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 14,
     color: Colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 28,
+    marginBottom: 24,
+  },
+  card: {
+    backgroundColor: Colors.white,
+    borderRadius: Radius.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 20,
+    ...Shadow.card,
   },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
   footerText: { color: Colors.textSecondary },

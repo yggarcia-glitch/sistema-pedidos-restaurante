@@ -1,77 +1,50 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { useCart } from '../../hooks/useCart';
+import { Button } from '../ui/Button';
+
+function initials(name = '') {
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
 
 export function Navbar() {
-  const { user, isAuthenticated, logout } = useAuth();
-  const { itemCount } = useCart();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
+  const { user, isAuthenticated } = useAuth();
 
   return (
-    <nav className="sticky top-0 z-40 bg-white border-b border-border">
-      <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 font-bold text-primary text-lg">
-          🍽️ PediYa
-        </Link>
-
-        <div className="hidden md:flex items-center gap-4">
-          {isAuthenticated ? (
-            <>
-              {user?.rol?.nombre === 'CLIENTE' && (
-                <>
-                  <Link to="/history" className="text-sm text-text-secondary hover:text-text">
-                    Mis pedidos
-                  </Link>
-                  <Link to="/cart" className="relative">
-                    <span className="text-2xl">🛒</span>
-                    {itemCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                        {itemCount}
-                      </span>
-                    )}
-                  </Link>
-                </>
-              )}
-              {user?.rol?.nombre === 'VENDEDOR' && (
-                <Link to="/vendor/dashboard" className="text-sm text-text-secondary hover:text-text">
-                  Dashboard
-                </Link>
-              )}
-              {user?.rol?.nombre === 'ADMIN' && (
-                <Link to="/admin/dashboard" className="text-sm text-text-secondary hover:text-text">
-                  Admin
-                </Link>
-              )}
-              <Link to="/profile" className="text-sm font-medium text-text">
-                {user?.name?.split(' ')[0]}
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="text-sm text-text-secondary hover:text-red-500"
-              >
-                Salir
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="text-sm text-text-secondary hover:text-text">
-                Iniciar sesión
-              </Link>
-              <Link
-                to="/register"
-                className="text-sm bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary-dark"
-              >
-                Registrarse
-              </Link>
-            </>
-          )}
+    <header className="h-[56px] bg-white border-b border-border px-6 flex items-center justify-between">
+      {/* Izquierda: logo + nombre */}
+      <Link to="/" className="flex items-center gap-2">
+        <div className="w-[36px] h-[36px] rounded-[10px] bg-primary flex items-center justify-center text-[18px]">
+          🍽
         </div>
-      </div>
-    </nav>
+        <span className="font-bold text-[15px] text-txt">Sistema de Pedidos</span>
+      </Link>
+
+      {/* Derecha */}
+      {isAuthenticated ? (
+        <div className="flex items-center gap-4">
+          <span className="text-[18px] cursor-pointer">🔔</span>
+          <Link
+            to="/profile"
+            className="w-[34px] h-[34px] rounded-full bg-primary-light text-primary-dark font-bold text-[12px] flex items-center justify-center"
+          >
+            {initials(user?.name)}
+          </Link>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <Link to="/login">
+            <Button variant="outline">Iniciar sesión</Button>
+          </Link>
+          <Link to="/register">
+            <Button variant="primary">Registrarse</Button>
+          </Link>
+        </div>
+      )}
+    </header>
   );
 }

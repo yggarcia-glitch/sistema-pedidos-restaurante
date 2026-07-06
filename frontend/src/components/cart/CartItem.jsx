@@ -1,43 +1,41 @@
 import { useCart } from '../../hooks/useCart';
+import { Card } from '../ui/Card';
+import { money } from '../../lib/format';
 
 export function CartItemRow({ item }) {
   const { updateItem, removeItem } = useCart();
+  const name = item.product?.name ?? item.productName;
+  const lineTotal = money(Number(item.unitPrice) * item.quantity);
+
+  const dec = () =>
+    item.quantity <= 1 ? removeItem(item.id) : updateItem(item.id, item.quantity - 1);
 
   return (
-    <div className="flex gap-3 py-3 border-b border-border last:border-0">
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm text-text">{item.product?.name ?? item.productName}</p>
-        {item.choices?.map((c) => (
-          <p key={c.id} className="text-xs text-text-secondary">
-            + {c.choice?.name ?? c.choiceName}
-          </p>
-        ))}
-        <p className="text-sm font-semibold text-primary mt-1">
-          ${(Number(item.unitPrice) * item.quantity).toFixed(2)}
-        </p>
+    <Card className="mb-[8px]">
+      {/* Fila 1: nombre + precio */}
+      <div className="flex items-center justify-between mb-[5px]">
+        <p className="font-bold text-[12px] text-txt truncate mr-2">{name}</p>
+        <p className="text-[12px] font-bold text-primary whitespace-nowrap">{lineTotal}</p>
       </div>
 
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <button
-          onClick={() => updateItem(item.id, item.quantity - 1)}
-          className="w-7 h-7 rounded-full border border-border text-lg leading-none hover:bg-background"
-        >
-          −
-        </button>
-        <span className="text-sm w-4 text-center">{item.quantity}</span>
-        <button
-          onClick={() => updateItem(item.id, item.quantity + 1)}
-          className="w-7 h-7 rounded-full border border-border text-lg leading-none hover:bg-background"
-        >
-          +
-        </button>
-        <button
-          onClick={() => removeItem(item.id)}
-          className="ml-1 text-red-400 hover:text-red-600 text-sm"
-        >
-          🗑️
-        </button>
+      {/* Fila 2: nota + control de cantidad */}
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] text-txt-3 truncate mr-2">
+          {item.notes || item.choices?.map((c) => c.choice?.name ?? c.choiceName).filter(Boolean).join(', ') || '—'}
+        </p>
+        <div className="bg-background rounded-full px-[11px] py-[4px] flex items-center gap-[10px] flex-shrink-0">
+          <button onClick={dec} className="text-primary font-bold text-[16px] leading-none cursor-pointer">
+            −
+          </button>
+          <span className="font-bold text-[12px] text-txt">{item.quantity}</span>
+          <button
+            onClick={() => updateItem(item.id, item.quantity + 1)}
+            className="text-primary font-bold text-[16px] leading-none cursor-pointer"
+          >
+            +
+          </button>
+        </div>
       </div>
-    </div>
+    </Card>
   );
 }

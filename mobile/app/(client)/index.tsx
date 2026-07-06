@@ -2,16 +2,18 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/src/constants/colors';
+import { Colors, Radius } from '@/src/constants/colors';
 import { CUENCA } from '@/src/constants/api';
 import { restaurantsApi } from '@/src/api/restaurants.api';
 import { getApiError } from '@/src/api/axios';
@@ -19,6 +21,16 @@ import { Restaurant } from '@/src/types';
 import { RestaurantCard } from '@/src/components/restaurants/RestaurantCard';
 import { RestaurantMap } from '@/src/components/restaurants/RestaurantMap';
 import { Spinner } from '@/src/components/ui/Spinner';
+
+// Chips de categoría (filtran por nombre de categoría del restaurante).
+const CATEGORIES: { label: string; kw: string | null }[] = [
+  { label: 'Todo', kw: null },
+  { label: '🔥 Rápido', kw: 'rápid' },
+  { label: '🍕 Pizza', kw: 'pizza' },
+  { label: '🍣 Sushi', kw: 'sushi' },
+  { label: '🍗 Pollo', kw: 'pollo' },
+  { label: '🥗 Saludable', kw: 'salud' },
+];
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -28,6 +40,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
+  const [activeKw, setActiveKw] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Pide permiso de ubicación. Si lo deniega, usa Cuenca como fallback.
@@ -87,9 +100,14 @@ export default function HomeScreen() {
     fetchNearby();
   };
 
-  const filtered = restaurants.filter((r) =>
-    r.name.toLowerCase().includes(search.trim().toLowerCase()),
-  );
+  const filtered = restaurants.filter((r) => {
+    const matchName = r.name.toLowerCase().includes(search.trim().toLowerCase());
+    const matchCat =
+      !activeKw ||
+      r.categories?.some((c) => c.name.toLowerCase().includes(activeKw)) ||
+      r.name.toLowerCase().includes(activeKw);
+    return matchName && matchCat;
+  });
 
   if (loading) return <Spinner text="Buscando restaurantes cercanos…" />;
 
@@ -124,12 +142,35 @@ export default function HomeScreen() {
               <Ionicons name="search" size={18} color={Colors.textTertiary} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Buscar restaurantes"
+                placeholder="Buscar restaurantes o platillos…"
                 placeholderTextColor={Colors.textTertiary}
                 value={search}
                 onChangeText={setSearch}
               />
             </View>
+
+            {/* Chips de categoría */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipsRow}
+            >
+              {CATEGORIES.map((cat) => {
+                const active = activeKw === cat.kw;
+                return (
+                  <TouchableOpacity
+                    key={cat.label}
+                    onPress={() => setActiveKw(cat.kw)}
+                    activeOpacity={0.8}
+                    style={[styles.chip, active && styles.chipActive]}
+                  >
+                    <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                      {cat.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
 
             {/* Mapa de cercanos */}
             <View style={styles.mapWrap}>
@@ -170,15 +211,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.white,
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 16,
     height: 46,
     borderWidth: 1,
     borderColor: Colors.border,
     gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 15, color: Colors.text },
-  mapWrap: { marginTop: 16 },
+  searchInput: { flex: 1, fontSize: 14, color: Colors.text },
+  chipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingRight: 4,
+  },
+  chip: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  chipText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
+  chipTextActive: { color: Colors.white },
+  mapWrap: { marginTop: 4 },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '800',

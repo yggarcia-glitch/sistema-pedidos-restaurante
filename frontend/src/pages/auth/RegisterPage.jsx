@@ -1,9 +1,9 @@
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { useState } from 'react';
 
 const ROLE_REDIRECT = {
   CLIENTE: '/',
@@ -20,12 +20,14 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const onSubmit = async (data) => {
+  const password = watch('password');
+
+  const onSubmit = async ({ confirmPassword, ...data }) => {
     setError('');
     setLoading(true);
     try {
       const user = await authRegister(data);
-      navigate(ROLE_REDIRECT[user.rol.nombre] ?? '/');
+      navigate(ROLE_REDIRECT[user.rol?.nombre] ?? '/');
     } catch (err) {
       setError(err.response?.data?.message ?? 'Error al registrarse');
     } finally {
@@ -34,52 +36,67 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <span className="text-5xl">🍽️</span>
-          <h1 className="text-2xl font-bold text-text mt-3">Crea tu cuenta</h1>
-          <p className="text-text-secondary text-sm mt-1">Únete a PediYa</p>
+    <div className="min-h-screen bg-background flex items-center justify-center py-8">
+      <div className="bg-white rounded-[14px] border border-border p-8 w-full max-w-sm shadow-sm">
+        {/* Logo */}
+        <div className="w-[56px] h-[56px] rounded-[18px] bg-primary flex items-center justify-center text-[28px] mx-auto mb-[14px]">
+          🍽
         </div>
+        <h1 className="text-[20px] font-bold text-txt text-center mb-[6px]">Crea tu cuenta</h1>
+        <p className="text-[12px] text-txt-2 text-center mb-[28px]">
+          Regístrate para empezar a pedir
+        </p>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-2xl p-6 border border-border space-y-4">
-          <Input
-            label="Nombre completo"
-            placeholder="Juan Pérez"
-            error={errors.name?.message}
-            {...register('name', { required: 'El nombre es obligatorio' })}
-          />
-          <Input
-            label="Correo electrónico"
-            type="email"
-            placeholder="tu@email.com"
-            error={errors.email?.message}
-            {...register('email', {
-              required: 'El correo es obligatorio',
-              pattern: { value: /\S+@\S+\.\S+/, message: 'Correo inválido' },
-            })}
-          />
-          <Input
-            label="Contraseña"
-            type="password"
-            placeholder="Mínimo 6 caracteres"
-            error={errors.password?.message}
-            {...register('password', {
-              required: 'La contraseña es obligatoria',
-              minLength: { value: 6, message: 'Mínimo 6 caracteres' },
-            })}
-          />
-          <Input
-            label="Teléfono (opcional)"
-            type="tel"
-            placeholder="0999999999"
-            {...register('phone')}
-          />
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="mb-3">
+            <Input
+              label="Nombre completo"
+              placeholder="Juan Pérez"
+              error={errors.name?.message}
+              {...register('name', { required: 'El nombre es obligatorio' })}
+            />
+          </div>
+          <div className="mb-3">
+            <Input
+              label="Correo electrónico"
+              type="email"
+              placeholder="tucorreo@ejemplo.com"
+              error={errors.email?.message}
+              {...register('email', {
+                required: 'El correo es obligatorio',
+                pattern: { value: /\S+@\S+\.\S+/, message: 'Correo inválido' },
+              })}
+            />
+          </div>
+          <div className="mb-3">
+            <Input
+              label="Contraseña"
+              type="password"
+              placeholder="Mínimo 6 caracteres"
+              error={errors.password?.message}
+              {...register('password', {
+                required: 'La contraseña es obligatoria',
+                minLength: { value: 6, message: 'Mínimo 6 caracteres' },
+              })}
+            />
+          </div>
+          <div className="mb-3">
+            <Input
+              label="Confirmar contraseña"
+              type="password"
+              placeholder="Repite la contraseña"
+              error={errors.confirmPassword?.message}
+              {...register('confirmPassword', {
+                required: 'Confirma la contraseña',
+                validate: (v) => v === password || 'Las contraseñas no coinciden',
+              })}
+            />
+          </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-text">Tipo de cuenta</label>
+          <div className="mb-[18px]">
+            <label className="block text-[11px] font-medium text-txt-2 mb-1">Rol</label>
             <select
-              className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-text focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="bg-background border border-border rounded-[8px] px-3 py-2 text-[12px] text-txt w-full focus:outline-none focus:border-primary"
               {...register('role')}
             >
               <option value="CLIENTE">Cliente</option>
@@ -87,18 +104,16 @@ export default function RegisterPage() {
             </select>
           </div>
 
-          {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+          {error && <p className="text-[11px] text-red-500 text-center mb-[10px]">{error}</p>}
 
-          <Button type="submit" disabled={loading} className="w-full" size="lg">
-            {loading ? 'Registrando...' : 'Crear cuenta'}
+          <Button type="submit" variant="primary" fullWidth loading={loading} className="mb-[12px]">
+            Crear cuenta
           </Button>
         </form>
 
-        <p className="text-center text-sm text-text-secondary mt-4">
-          ¿Ya tienes cuenta?{' '}
-          <Link to="/login" className="text-primary font-medium hover:underline">
-            Inicia sesión
-          </Link>
+        <p className="text-center text-[11px] text-txt-2">
+          ¿Ya tienes cuenta?
+          <Link to="/login" className="text-primary font-semibold"> Inicia sesión</Link>
         </p>
       </div>
     </div>

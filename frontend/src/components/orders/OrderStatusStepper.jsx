@@ -1,67 +1,66 @@
-const STEPS = [
-  { key: 'PENDIENTE', label: 'Pendiente', icon: '🕐' },
-  { key: 'CONFIRMADO', label: 'Confirmado', icon: '✅' },
-  { key: 'EN_PREPARACION', label: 'En preparación', icon: '👨‍🍳' },
-  { key: 'LISTO', label: 'Listo', icon: '📦' },
-  { key: 'EN_CAMINO', label: 'En camino', icon: '🛵' },
-  { key: 'ENTREGADO', label: 'Entregado', icon: '🎉' },
-];
+// Stepper horizontal de 4 pasos según el diseño aprobado.
+const STEPS = ['Confirmado', 'Preparando', 'En camino', 'Entregado'];
+
+// Cuántos pasos se consideran completados según el estado del backend.
+const COMPLETED = {
+  PENDIENTE: 0,
+  CONFIRMADO: 1,
+  EN_PREPARACION: 2,
+  LISTO: 2,
+  EN_CAMINO: 3,
+  ENTREGADO: 4,
+};
 
 export function OrderStatusStepper({ currentStatus }) {
   if (['CANCELADO', 'RECHAZADO'].includes(currentStatus)) {
     return (
-      <div className="flex items-center justify-center p-6 bg-red-50 rounded-2xl">
-        <div className="text-center">
-          <span className="text-4xl">❌</span>
-          <p className="font-semibold text-red-600 mt-2">
-            Pedido {currentStatus === 'CANCELADO' ? 'Cancelado' : 'Rechazado'}
+      <div className="flex items-center justify-center py-6 text-center">
+        <div>
+          <span className="text-[28px]">❌</span>
+          <p className="font-bold text-red-600 text-[13px] mt-1">
+            Pedido {currentStatus === 'CANCELADO' ? 'cancelado' : 'rechazado'}
           </p>
         </div>
       </div>
     );
   }
 
-  const currentIdx = STEPS.findIndex((s) => s.key === currentStatus);
+  const completed = COMPLETED[currentStatus] ?? 0;
+  const fraction = Math.max(0, completed - 1) / (STEPS.length - 1);
 
   return (
-    <div className="overflow-x-auto pb-2">
-      <div className="flex items-center min-w-max">
-        {STEPS.map((step, idx) => {
-          const done = idx < currentIdx;
-          const active = idx === currentIdx;
-          return (
-            <div key={step.key} className="flex items-center">
-              <div className={`flex flex-col items-center ${active ? 'scale-110' : ''} transition-transform`}>
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-lg border-2 ${
-                    done
-                      ? 'bg-primary border-primary text-white'
-                      : active
-                        ? 'bg-primary-light border-primary'
-                        : 'bg-white border-border'
-                  }`}
-                >
-                  {step.icon}
-                </div>
-                <span
-                  className={`text-xs mt-1 text-center max-w-[60px] leading-tight ${
-                    active ? 'text-primary font-semibold' : done ? 'text-text-secondary' : 'text-border'
-                  }`}
-                >
-                  {step.label}
-                </span>
-              </div>
-              {idx < STEPS.length - 1 && (
-                <div
-                  className={`h-0.5 w-8 mx-1 rounded-full ${
-                    idx < currentIdx ? 'bg-primary' : 'bg-border'
-                  }`}
-                />
-              )}
+    <div className="flex justify-between items-start relative mb-[16px]">
+      {/* Línea de fondo */}
+      <div className="absolute top-[9px] left-[12px] right-[12px] h-[2px] bg-border" />
+      {/* Línea de progreso */}
+      <div
+        className="absolute top-[9px] left-[12px] h-[2px] bg-primary"
+        style={{ width: `calc((100% - 24px) * ${fraction})` }}
+      />
+
+      {STEPS.map((label, idx) => {
+        const done = idx < completed;
+        return (
+          <div key={label} className="text-center z-10 w-1/4">
+            <div
+              className={`w-[20px] h-[20px] rounded-full border-2 mx-auto flex items-center justify-center text-[10px] ${
+                done
+                  ? 'bg-primary border-primary text-white'
+                  : 'bg-background border-border'
+              }`}
+            >
+              {done && '✓'}
             </div>
-          );
-        })}
-      </div>
+            <p
+              className={`text-[9px] mt-[4px] ${
+                done ? 'text-primary font-bold' : 'text-txt-3'
+              }`}
+            >
+              {label}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 }

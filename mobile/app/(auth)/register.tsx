@@ -11,13 +11,14 @@ import {
 import { Link, useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '@/src/constants/colors';
+import { Colors, Radius, Shadow } from '@/src/constants/colors';
 import { useAuth } from '@/src/hooks/useAuth';
 import { getApiError } from '@/src/api/axios';
 import { notify } from '@/src/utils/dialog';
 import { Role } from '@/src/types';
 import { Input } from '@/src/components/ui/Input';
 import { Button } from '@/src/components/ui/Button';
+import { BrandMark } from '@/src/components/ui/BrandMark';
 
 interface FormData {
   name: string;
@@ -67,88 +68,92 @@ export default function RegisterScreen() {
           contentContainerStyle={styles.container}
           keyboardShouldPersistTaps="handled"
         >
+          <View style={styles.brandWrap}>
+            <BrandMark />
+          </View>
           <Text style={styles.title}>Crear cuenta</Text>
           <Text style={styles.subtitle}>Regístrate para hacer tus pedidos</Text>
 
-          <Controller
-            control={control}
-            name="name"
-            rules={{ required: 'El nombre es obligatorio' }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Nombre"
-                placeholder="Tu nombre"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.name?.message}
-              />
-            )}
-          />
+          <View style={styles.card}>
+            <Controller
+              control={control}
+              name="name"
+              rules={{ required: 'El nombre es obligatorio' }}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  label="Nombre completo"
+                  placeholder="Tu nombre"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={errors.name?.message}
+                />
+              )}
+            />
 
-          <Controller
-            control={control}
-            name="email"
-            rules={{
-              required: 'El correo es obligatorio',
-              pattern: { value: /^\S+@\S+\.\S+$/, message: 'Correo inválido' },
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Correo"
-                placeholder="tucorreo@ejemplo.com"
-                autoCapitalize="none"
-                keyboardType="email-address"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.email?.message}
-              />
-            )}
-          />
+            <Controller
+              control={control}
+              name="email"
+              rules={{
+                required: 'El correo es obligatorio',
+                pattern: { value: /^\S+@\S+\.\S+$/, message: 'Correo inválido' },
+              }}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  label="Correo electrónico"
+                  placeholder="tucorreo@ejemplo.com"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={errors.email?.message}
+                />
+              )}
+            />
 
-          <Controller
-            control={control}
-            name="phone"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Teléfono (opcional)"
-                placeholder="09XXXXXXXX"
-                keyboardType="phone-pad"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-              />
-            )}
-          />
+            <Controller
+              control={control}
+              name="phone"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  label="Teléfono (opcional)"
+                  placeholder="09XXXXXXXX"
+                  keyboardType="phone-pad"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                />
+              )}
+            />
 
-          <Controller
-            control={control}
-            name="password"
-            rules={{
-              required: 'La contraseña es obligatoria',
-              minLength: { value: 6, message: 'Mínimo 6 caracteres' },
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Contraseña"
-                placeholder="••••••"
-                secureTextEntry
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.password?.message}
-              />
-            )}
-          />
+            <Controller
+              control={control}
+              name="password"
+              rules={{
+                required: 'La contraseña es obligatoria',
+                minLength: { value: 6, message: 'Mínimo 6 caracteres' },
+              }}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  label="Contraseña"
+                  placeholder="••••••"
+                  secureTextEntry
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={errors.password?.message}
+                />
+              )}
+            />
 
-          <Button
-            title="Registrarme"
-            onPress={handleSubmit(onSubmit)}
-            loading={loading}
-            fullWidth
-            style={{ marginTop: 8 }}
-          />
+            <Button
+              title="Registrarme"
+              onPress={handleSubmit(onSubmit)}
+              loading={loading}
+              fullWidth
+            />
+          </View>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>¿Ya tienes cuenta? </Text>
@@ -166,28 +171,22 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
   flex: { flex: 1 },
   container: { padding: 24, flexGrow: 1, justifyContent: 'center' },
-  title: { fontSize: 26, fontWeight: '800', color: Colors.text, textAlign: 'center' },
+  brandWrap: { alignItems: 'center', marginBottom: 16 },
+  title: { fontSize: 24, fontWeight: '800', color: Colors.text, textAlign: 'center' },
   subtitle: {
-    fontSize: 15,
+    fontSize: 14,
     color: Colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
   },
-  roleLabel: { fontSize: 14, fontWeight: '600', color: Colors.text, marginBottom: 8 },
-  roleRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  roleOption: {
-    flex: 1,
-    height: 46,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+  card: {
     backgroundColor: Colors.white,
+    borderRadius: Radius.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 20,
+    ...Shadow.card,
   },
-  roleOptionActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryLight },
-  roleText: { color: Colors.textSecondary, fontWeight: '700' },
-  roleTextActive: { color: Colors.primary },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
   footerText: { color: Colors.textSecondary },
   link: { color: Colors.primary, fontWeight: '700' },

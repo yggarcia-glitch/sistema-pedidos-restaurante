@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Navbar } from '../../components/layout/Navbar';
-import { BottomNav } from '../../components/layout/BottomNav';
 import { RestaurantCard } from '../../components/restaurants/RestaurantCard';
 import { RestaurantMap } from '../../components/restaurants/RestaurantMap';
 import { PageSpinner } from '../../components/ui/Spinner';
@@ -8,94 +7,98 @@ import { Pagination } from '../../components/ui/Pagination';
 import { useRestaurants } from '../../hooks/useRestaurants';
 import { useNearby } from '../../hooks/useNearby';
 
+const CATEGORIES = [
+  { label: 'Todo', kw: null },
+  { label: '🔥 Rápido', kw: 'rápid' },
+  { label: '🍕 Pizza', kw: 'pizza' },
+  { label: '🍣 Sushi', kw: 'sushi' },
+  { label: '🍗 Pollo', kw: 'pollo' },
+  { label: '🥗 Saludable', kw: 'salud' },
+];
+
 export default function HomePage() {
   const [search, setSearch] = useState('');
-  const [cityFilter, setCityFilter] = useState('');
+  const [activeKw, setActiveKw] = useState(null);
 
-  const { data, page, totalPages, loading, setPage } = useRestaurants({
-    city: cityFilter || undefined,
-    limit: 12,
+  const { data, page, totalPages, loading, error, setPage } = useRestaurants({ limit: 12 });
+  const { coords, nearby } = useNearby();
+
+  const filtered = data.filter((r) => {
+    const matchName = !search || r.name.toLowerCase().includes(search.toLowerCase());
+    const matchCat =
+      !activeKw ||
+      r.categories?.some((c) => c.name.toLowerCase().includes(activeKw)) ||
+      r.name.toLowerCase().includes(activeKw);
+    return matchName && matchCat;
   });
 
-  const { coords, nearby, loading: nearbyLoading } = useNearby();
-
-  // Filtra los resultados localmente por nombre si hay texto en el buscador
-  const filtered = search
-    ? data.filter((r) => r.name.toLowerCase().includes(search.toLowerCase()))
-    : data;
-
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-0">
+    <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Buscador */}
-        <div className="relative mb-6">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary">🔍</span>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar restaurantes..."
-            className="w-full pl-10 pr-4 py-3 rounded-2xl border border-border bg-white text-text placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-        </div>
-
-        {/* Mapa de restaurantes cercanos */}
-        <section className="mb-8">
-          <h2 className="text-lg font-bold text-text mb-3">Cerca de ti</h2>
-          <RestaurantMap restaurants={nearby} userCoords={coords} />
-        </section>
-
-        {/* Restaurantes cercanos */}
-        {nearby.length > 0 && (
-          <section className="mb-8">
-            <h2 className="text-lg font-bold text-text mb-3">
-              Restaurantes cercanos ({nearby.length})
-            </h2>
-            {nearbyLoading ? (
-              <PageSpinner />
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {nearby.slice(0, 4).map((r) => (
-                  <RestaurantCard key={r.id} restaurant={r} />
-                ))}
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* Todos los restaurantes */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-text">Todos los restaurantes</h2>
+      <div className="max-w-6xl mx-auto px-6 py-6">
+        {/* Fila 1: ubicación + buscador */}
+        <div className="flex items-center gap-[14px] mb-[12px]">
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <span className="text-primary">📍</span>
+            <span className="font-semibold text-[11px] text-txt">Cuenca</span>
+            <span className="text-txt-3">▾</span>
+          </div>
+          <div className="bg-background rounded-full px-[14px] py-[8px] flex items-center gap-[8px] border border-border flex-1 max-w-lg">
+            <span className="text-txt-3">🔍</span>
             <input
-              value={cityFilter}
-              onChange={(e) => { setCityFilter(e.target.value); setPage(1); }}
-              placeholder="Ciudad..."
-              className="text-sm px-3 py-1.5 rounded-xl border border-border bg-white w-32 focus:outline-none focus:ring-2 focus:ring-primary/30"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar restaurantes o platillos..."
+              className="bg-transparent text-[12px] text-txt placeholder:text-txt-3 focus:outline-none w-full"
             />
           </div>
+        </div>
 
-          {loading ? (
-            <PageSpinner />
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-text-secondary">
-              <span className="text-4xl">🍽️</span>
-              <p className="mt-2">No se encontraron restaurantes</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {filtered.map((r) => (
-                <RestaurantCard key={r.id} restaurant={r} />
-              ))}
-            </div>
-          )}
+        {/* Fila 2: chips de categoría */}
+        <div className="flex gap-[6px] overflow-x-auto mb-[14px]">
+          {CATEGORIES.map((cat) => {
+            const active = activeKw === cat.kw;
+            return (
+              <button
+                key={cat.label}
+                onClick={() => setActiveKw(cat.kw)}
+                className={`whitespace-nowrap text-[10px] px-[11px] py-[5px] rounded-full border cursor-pointer ${
+                  active ? 'bg-primary border-primary text-white' : 'border-border text-txt-2'
+                }`}
+              >
+                {cat.label}
+              </button>
+            );
+          })}
+        </div>
 
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-        </section>
+        {/* Mapa */}
+        <div className="mb-[14px]">
+          <RestaurantMap restaurants={nearby} userCoords={coords} />
+        </div>
+
+        {/* Grid de restaurantes */}
+        <h2 className="text-[13px] font-bold text-txt mb-[10px]">Cerca de ti</h2>
+
+        {loading ? (
+          <PageSpinner />
+        ) : error ? (
+          <p className="text-center text-[12px] text-red-500 py-8">{error}</p>
+        ) : filtered.length === 0 ? (
+          <p className="text-center text-[12px] text-txt-2 py-10">
+            No hay restaurantes todavía
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[10px]">
+            {filtered.map((r) => (
+              <RestaurantCard key={r.id} restaurant={r} />
+            ))}
+          </div>
+        )}
+
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
-
-      <BottomNav />
     </div>
   );
 }
