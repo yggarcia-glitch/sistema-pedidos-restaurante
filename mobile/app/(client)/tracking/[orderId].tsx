@@ -13,6 +13,8 @@ import { Spinner } from '@/src/components/ui/Spinner';
 import { Button } from '@/src/components/ui/Button';
 import { OrderStatusStepper } from '@/src/components/orders/OrderStatusStepper';
 import { CourierMap } from '@/src/components/orders/CourierMap';
+import { DriverRouteMap } from '@/src/components/drivers/DriverRouteMap';
+import { Coords } from '@/src/utils/geo';
 
 const TITLES: Record<string, { title: string; emoji: string }> = {
   PENDIENTE: { title: 'Confirmando tu pedido', emoji: '🧾' },
@@ -81,6 +83,24 @@ export default function TrackingScreen() {
   const isMoving = status === OrderStatus.EN_CAMINO;
   const eta = order.estimatedTime ? `${order.estimatedTime} min` : undefined;
 
+  // Coordenadas para el mapa de ruta (tipo PedidosYa).
+  const restaurantCoords: Coords | null =
+    order.restaurant?.latitude != null
+      ? { lat: order.restaurant.latitude, lng: order.restaurant.longitude }
+      : null;
+  const destinationCoords: Coords | null =
+    order.client?.homeLat != null
+      ? { lat: order.client.homeLat, lng: order.client.homeLng! }
+      : null;
+  const dp = order.driver?.driverProfile;
+  const driverCoords: Coords | null =
+    (status === OrderStatus.EN_CAMINO || status === OrderStatus.LISTO) && dp?.currentLat != null
+      ? { lat: dp.currentLat, lng: dp.currentLng! }
+      : null;
+  // Origen de la ruta: el repartidor si ya se mueve; si no, el restaurante.
+  const routeOrigin = driverCoords ?? restaurantCoords;
+  const showRealMap = !isCancelled && destinationCoords && routeOrigin;
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.topBar}>
@@ -104,8 +124,18 @@ export default function TrackingScreen() {
           </View>
         </View>
 
-        {/* Mapa del repartidor */}
-        {!isCancelled && <CourierMap eta={eta} moving={isMoving} />}
+        {/* Mapa de ruta del repartidor (tipo PedidosYa). Mapa real si hay coords;
+            si no, el panel decorativo de respaldo. */}
+        {showRealMap ? (
+          <DriverRouteMap
+            driverCoords={routeOrigin!}
+            destination={destinationCoords!}
+            destinationLabel="Tu ubicación"
+            originLabel={driverCoords ? 'Repartidor' : 'Restaurante'}
+          />
+        ) : (
+          !isCancelled && <CourierMap eta={eta} moving={isMoving} />
+        )}
 
         {/* Stepper */}
         <View style={styles.card}>

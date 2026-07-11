@@ -28,11 +28,25 @@ const ORDER_DETAIL_INCLUDE = {
   items: { include: { choices: true } },
   statusHistory: { orderBy: { changedAt: 'asc' as const }, include: { estado: CATALOGO } },
   payment: { include: { metodo: CATALOGO, estado: CATALOGO } },
-  restaurant: { select: { id: true, name: true, ownerId: true, logoUrl: true } },
+  restaurant: {
+    select: { id: true, name: true, ownerId: true, logoUrl: true, latitude: true, longitude: true },
+  },
   address: true,
   estado: CATALOGO,
   tipoEntrega: CATALOGO,
-  driver: { select: { id: true, name: true, phone: true } },
+  // Cliente con su "casa" (destino de la entrega) para dibujar la ruta en el seguimiento.
+  client: { select: { id: true, name: true, phone: true, homeLat: true, homeLng: true } },
+  // Repartidor + su ubicación viva (se actualiza cada ~10s mientras reparte).
+  driver: {
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      driverProfile: {
+        select: { currentLat: true, currentLng: true, locationUpdatedAt: true },
+      },
+    },
+  },
 };
 
 @Injectable()

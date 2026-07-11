@@ -21,7 +21,7 @@ const CURRENT_ORDER_INCLUDE = {
     select: { id: true, name: true, phone: true, latitude: true, longitude: true, logoUrl: true },
   },
   address: true,
-  client: { select: { id: true, name: true, phone: true } },
+  client: { select: { id: true, name: true, phone: true, homeLat: true, homeLng: true } },
   estado: CATALOGO,
   tipoEntrega: CATALOGO,
 };
@@ -85,7 +85,10 @@ export class DriversService {
       include: { restaurant: true, tipoEntrega: CATALOGO },
     });
     if (!order) return null;
-    if (order.tipoEntrega.nombre !== DeliveryType.DELIVERY || !order.addressId) return null;
+    // Solo los pedidos DELIVERY se asignan a repartidores. La dirección (addressId)
+    // es opcional: este sistema aún no tiene módulo de direcciones, así que el pedido
+    // se asigna igual y el mapa de destino simplemente no se dibuja si falta.
+    if (order.tipoEntrega.nombre !== DeliveryType.DELIVERY) return null;
     if (order.driverId) return null; // ya asignado
 
     const candidates = await this.prisma.driverProfile.findMany({

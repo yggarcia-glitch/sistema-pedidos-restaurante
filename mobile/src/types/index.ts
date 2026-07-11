@@ -255,8 +255,20 @@ export interface Order {
   address?: Address | null;
   items?: OrderItem[];
   payment?: Payment | null;
-  driver?: Pick<User, 'id' | 'name' | 'phone'> | null;
-  client?: Pick<User, 'id' | 'name' | 'phone'>;
+  driver?:
+    | (Pick<User, 'id' | 'name' | 'phone'> & {
+        driverProfile?: {
+          currentLat?: number | null;
+          currentLng?: number | null;
+          locationUpdatedAt?: string | null;
+        } | null;
+      })
+    | null;
+  // Cliente con su "casa" (destino de la entrega) para dibujar la ruta.
+  client?: Pick<User, 'id' | 'name' | 'phone'> & {
+    homeLat?: number | null;
+    homeLng?: number | null;
+  };
 }
 
 export interface DriverProfile {

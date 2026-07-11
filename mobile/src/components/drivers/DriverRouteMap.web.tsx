@@ -8,6 +8,7 @@ interface Props {
   driverCoords: Coords;
   destination: Coords;
   destinationLabel: string;
+  originLabel?: string;
   height?: number;
 }
 

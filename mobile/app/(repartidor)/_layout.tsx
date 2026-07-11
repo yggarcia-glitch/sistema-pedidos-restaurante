@@ -1,6 +1,5 @@
 import React from 'react';
-import { Redirect, Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Redirect, Stack } from 'expo-router';
 import { Colors } from '@/src/constants/colors';
 import { useAuth } from '@/src/hooks/useAuth';
 import { Role } from '@/src/types';
@@ -13,33 +12,20 @@ export default function RepartidorLayout() {
   if (!isAuthenticated) return <Redirect href="/(auth)/login" />;
   if (user?.rol?.nombre !== Role.REPARTIDOR) return <Redirect href="/" />;
 
+  // Sin tabs: el panel usa un mapa a pantalla completa. El perfil se abre por push
+  // desde el menú de acciones.
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textTertiary,
-        tabBarStyle: { backgroundColor: Colors.white, borderTopColor: Colors.border },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Pedidos',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="bicycle-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.background } }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen
         name="profile"
         options={{
-          title: 'Perfil',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
-          ),
+          headerShown: true,
+          title: 'Mi perfil',
+          headerTintColor: Colors.text,
+          headerStyle: { backgroundColor: Colors.white },
         }}
       />
-    </Tabs>
+    </Stack>
   );
 }
