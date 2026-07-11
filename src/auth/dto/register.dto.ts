@@ -26,6 +26,6 @@ export class RegisterDto {
   phone?: string;
 
   @IsOptional()
-  @IsEnum(Role, { message: 'Rol inválido. Valores: CLIENTE, VENDEDOR, ADMIN' })
+  @IsEnum(Role, { message: 'Rol inválido. Valores: CLIENTE, VENDEDOR, ADMIN, REPARTIDOR' })
   role?: Role;
 }

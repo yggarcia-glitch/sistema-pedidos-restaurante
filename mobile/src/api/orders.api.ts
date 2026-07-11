@@ -16,4 +16,8 @@ export const ordersApi = {
   updateStatus: (id: string, data: { status: OrderStatus; note?: string }) =>
     api.patch<Order>(`/orders/${id}/status`, data),
   cancel: (id: string) => api.patch<Order>(`/orders/${id}/cancel`),
+  acceptDriver: (id: string) => api.patch<Order>(`/orders/${id}/accept-driver`),
+  rejectDriver: (id: string) => api.patch<Order>(`/orders/${id}/reject-driver`),
+  pickup: (id: string) => api.patch<Order>(`/orders/${id}/pickup`),
+  deliver: (id: string) => api.patch<Order>(`/orders/${id}/deliver`),
 };

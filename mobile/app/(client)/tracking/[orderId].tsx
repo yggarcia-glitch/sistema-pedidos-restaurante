@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -112,22 +112,31 @@ export default function TrackingScreen() {
           <OrderStatusStepper status={status} />
         </View>
 
-        {/* Repartidor (cuando va en camino) */}
-        {isMoving && (
+        {/* Repartidor asignado (dato real, no aparece hasta que se le asigna uno) */}
+        {order.driver && (
           <View style={[styles.card, styles.courierCard]}>
             <View style={styles.courierAvatar}>
-              <Text style={styles.courierInitials}>CM</Text>
+              <Text style={styles.courierInitials}>
+                {order.driver.name
+                  .split(' ')
+                  .map((w) => w[0])
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase()}
+              </Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.courierName}>Carlos Morales</Text>
-              <Text style={styles.courierRole}>Repartidor · ★ 4.8</Text>
+              <Text style={styles.courierName}>{order.driver.name}</Text>
+              <Text style={styles.courierRole}>Repartidor</Text>
             </View>
-            <TouchableOpacity style={styles.courierAction}>
-              <Ionicons name="call" size={18} color={Colors.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.courierAction}>
-              <Ionicons name="chatbubble-ellipses" size={18} color={Colors.primary} />
-            </TouchableOpacity>
+            {order.driver.phone && (
+              <TouchableOpacity
+                style={styles.courierAction}
+                onPress={() => Linking.openURL(`tel:${order.driver!.phone}`)}
+              >
+                <Ionicons name="call" size={18} color={Colors.primary} />
+              </TouchableOpacity>
+            )}
           </View>
         )}
 

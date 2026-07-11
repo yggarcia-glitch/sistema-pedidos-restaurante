@@ -9,7 +9,7 @@ import { Role } from '@/src/types';
 import { Spinner } from '@/src/components/ui/Spinner';
 import { Button } from '@/src/components/ui/Button';
 
-// Punto de entrada. La app móvil es SOLO para clientes (usuarios finales);
+// Punto de entrada. La app móvil sirve a clientes y repartidores;
 // los locales (vendedores) y el administrador gestionan desde la versión web.
 export default function Index() {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
@@ -23,6 +23,11 @@ export default function Index() {
   // Cliente → app normal.
   if (user.rol.nombre === Role.CLIENTE) {
     return <Redirect href="/(client)" />;
+  }
+
+  // Repartidor → panel de reparto (mobile-only, ver /(repartidor)).
+  if (user.rol.nombre === Role.REPARTIDOR) {
+    return <Redirect href="/(repartidor)" />;
   }
 
   // Vendedor / Admin → aviso de que usen la web.

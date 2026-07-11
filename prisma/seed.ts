@@ -38,11 +38,20 @@ const PASSWORD = 'Test1234';
 
 // Usuarios de prueba (se upsertan por email).
 const USERS = [
-  { name: 'Cliente Demo', email: 'cliente@test.com', role: 'CLIENTE' as const },
-  { name: 'Vendedor Demo', email: 'vendedor@test.com', role: 'VENDEDOR' as const },
-  { name: 'Admin Demo', email: 'admin@test.com', role: 'ADMIN' as const },
-  { name: 'María Pizzas', email: 'maria@test.com', role: 'VENDEDOR' as const },
-  { name: 'Kenji Sushi', email: 'kenji@test.com', role: 'VENDEDOR' as const },
+  { name: 'Cliente Demo', email: 'cliente@test.com', role: 'CLIENTE' as const, phone: '0991234567' },
+  { name: 'Vendedor Demo', email: 'vendedor@test.com', role: 'VENDEDOR' as const, phone: '0991234568' },
+  { name: 'Admin Demo', email: 'admin@test.com', role: 'ADMIN' as const, phone: undefined },
+  { name: 'María Pizzas', email: 'maria@test.com', role: 'VENDEDOR' as const, phone: '0991234569' },
+  { name: 'Kenji Sushi', email: 'kenji@test.com', role: 'VENDEDOR' as const, phone: '0991234570' },
+  { name: 'Luis Repartidor', email: 'repartidor1@test.com', role: 'REPARTIDOR' as const, phone: '0991234571' },
+  { name: 'Andrea Repartidor', email: 'repartidor2@test.com', role: 'REPARTIDOR' as const, phone: '0991234572' },
+];
+
+// Coordenadas de arranque de los repartidores de prueba (ambos disponibles):
+// repartidor1 queda muy cerca de Burger House Cuenca (~200m); repartidor2 más lejos (~2.5km).
+const DRIVERS = [
+  { email: 'repartidor1@test.com', lat: CUENCA.lat + 0.0035, lng: CUENCA.lng + 0.0015 },
+  { email: 'repartidor2@test.com', lat: CUENCA.lat + 0.025, lng: CUENCA.lng - 0.02 },
 ];
 
 const RESTAURANTS: RestaurantSeed[] = [
@@ -233,7 +242,7 @@ const RESTAURANTS: RestaurantSeed[] = [
 
 // Valores de cada catálogo (antes eran enums).
 const CATALOGOS = {
-  roles: ['CLIENTE', 'VENDEDOR', 'ADMIN'],
+  roles: ['CLIENTE', 'VENDEDOR', 'ADMIN', 'REPARTIDOR'],
   estadosPedido: [
     'PENDIENTE',
     'CONFIRMADO',
@@ -290,11 +299,22 @@ async function main() {
     const rolId = rolIdByName[u.role];
     const user = await prisma.user.upsert({
       where: { email: u.email },
-      update: { name: u.name, rolId },
-      create: { name: u.name, email: u.email, password: hashed, rolId },
+      update: { name: u.name, rolId, phone: u.phone },
+      create: { name: u.name, email: u.email, password: hashed, rolId, phone: u.phone },
     });
     usersByEmail[u.email] = user.id;
     console.log(`  👤 ${u.email} (${u.role})`);
+  }
+
+  // 1b) Perfiles de repartidor (disponibles, con ubicación inicial cerca de Cuenca).
+  for (const d of DRIVERS) {
+    const userId = usersByEmail[d.email];
+    await prisma.driverProfile.upsert({
+      where: { userId },
+      update: { isAvailable: true, currentLat: d.lat, currentLng: d.lng, locationUpdatedAt: new Date() },
+      create: { userId, isAvailable: true, currentLat: d.lat, currentLng: d.lng, locationUpdatedAt: new Date() },
+    });
+    console.log(`  🛵 ${d.email} — disponible`);
   }
 
   // 2) Restaurantes con categorías y productos.

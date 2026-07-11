@@ -10,6 +10,7 @@ import { OrderStatus } from '../common/enums/order-status.enum';
 import { DeliveryType } from '../common/enums/delivery-type.enum';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-status.dto';
+import { DriversService } from '../drivers/drivers.service';
 
 // Estados que un VENDEDOR puede asignar (no puede entregar ni cancelar manualmente)
 const VENDOR_ALLOWED_STATUSES: string[] = [
@@ -31,11 +32,15 @@ const ORDER_DETAIL_INCLUDE = {
   address: true,
   estado: CATALOGO,
   tipoEntrega: CATALOGO,
+  driver: { select: { id: true, name: true, phone: true } },
 };
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly driversService: DriversService,
+  ) {}
 
   // ── Helpers para resolver el nombre de catálogo a su id (FK) ────────────────
   private async estadoPedidoId(nombre: string): Promise<number> {
@@ -169,6 +174,8 @@ export class OrdersService {
       });
       if (!restaurant) return { data: [], total: 0, page, totalPages: 0 };
       where.restaurantId = restaurant.id;
+    } else if (userRole === Role.REPARTIDOR) {
+      where.driverId = userId;
     }
     // ADMIN: sin filtro → todos los pedidos
 
@@ -229,7 +236,7 @@ export class OrdersService {
 
     const nuevoEstadoId = await this.estadoPedidoId(dto.status);
 
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       await tx.orderStatusHistory.create({
         data: {
           orderId: id,
@@ -253,6 +260,12 @@ export class OrdersService {
         },
       });
     });
+
+    if (dto.status === OrderStatus.LISTO) {
+      await this.driversService.assignNearestDriver(id);
+    }
+
+    return updated;
   }
 
   async cancel(id: string, userId: string) {
@@ -290,6 +303,7 @@ export class OrdersService {
     if (userRole === Role.ADMIN) return;
     if (userRole === Role.CLIENTE && order.clientId === userId) return;
     if (userRole === Role.VENDEDOR && order.restaurant.ownerId === userId) return;
+    if (userRole === Role.REPARTIDOR && order.driverId === userId) return;
     throw new ForbiddenException('No tienes acceso a este pedido');
   }
 }

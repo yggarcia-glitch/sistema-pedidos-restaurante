@@ -64,6 +64,12 @@ export class AuthService {
       select: SAFE_SELECT,
     });
 
+    if (rolNombre === Role.REPARTIDOR) {
+      await this.prisma.driverProfile.create({
+        data: { userId: user.id },
+      });
+    }
+
     const tokens = await this.generarTokens(user.id, user.email, user.rol.nombre);
     await this.guardarRefreshToken(user.id, tokens.refreshToken);
 

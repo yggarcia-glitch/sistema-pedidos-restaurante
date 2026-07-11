@@ -80,15 +80,32 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  rol        Rol         @relation(fields: [rolId], references: [id])
-  addresses  Address[]
-  restaurant Restaurant?
-  cart       Cart?
-  orders     Order[]
-  reviews    Review[]
-  payments   Payment[]
+  rol           Rol            @relation(fields: [rolId], references: [id])
+  addresses     Address[]
+  restaurant    Restaurant?
+  driverProfile DriverProfile?
+  cart          Cart?
+  orders        Order[]
+  driverOrders  Order[]        @relation("OrderDriver")
+  reviews       Review[]
+  payments      Payment[]
 
   @@map("users")
+}
+
+model DriverProfile {
+  id                String    @id @default(uuid())
+  userId            String    @unique @map("user_id")
+  isAvailable       Boolean   @default(false) @map("is_available")
+  currentLat        Float?    @map("current_lat")
+  currentLng        Float?    @map("current_lng")
+  locationUpdatedAt DateTime? @map("location_updated_at")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("driver_profiles")
 }
 
 model Address {
@@ -283,11 +300,17 @@ model Order {
   updatedAt    DateTime     @updatedAt
   deliveredAt  DateTime?
 
+  driverId          String?   @map("driver_id")
+  driverStatus      String?   @map("driver_status")
+  rejectedDriverIds String[]  @default([]) @map("rejected_driver_ids")
+  pickedUpAt        DateTime? @map("picked_up_at")
+
   client        User                 @relation(fields: [clientId], references: [id])
   restaurant    Restaurant           @relation(fields: [restaurantId], references: [id])
   address       Address?             @relation(fields: [addressId], references: [id])
   estado        EstadoPedido         @relation(fields: [estadoId], references: [id])
   tipoEntrega   TipoEntrega          @relation(fields: [tipoEntregaId], references: [id])
+  driver        User?                @relation("OrderDriver", fields: [driverId], references: [id])
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
   payment       Payment?

@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
+import { DriversService } from '../drivers/drivers.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -20,7 +21,10 @@ import { UpdateOrderStatusDto } from './dto/update-status.dto';
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(
+    private readonly ordersService: OrdersService,
+    private readonly driversService: DriversService,
+  ) {}
 
   @Post()
   @UseGuards(RolesGuard)
@@ -68,5 +72,33 @@ export class OrdersController {
   @Roles(Role.CLIENTE)
   cancel(@Param('id') id: string, @GetUser('id') userId: string) {
     return this.ordersService.cancel(id, userId);
+  }
+
+  @Patch(':id/accept-driver')
+  @UseGuards(RolesGuard)
+  @Roles(Role.REPARTIDOR)
+  acceptDriver(@Param('id') id: string, @GetUser('id') driverId: string) {
+    return this.driversService.acceptOrder(id, driverId);
+  }
+
+  @Patch(':id/reject-driver')
+  @UseGuards(RolesGuard)
+  @Roles(Role.REPARTIDOR)
+  rejectDriver(@Param('id') id: string, @GetUser('id') driverId: string) {
+    return this.driversService.rejectOrder(id, driverId);
+  }
+
+  @Patch(':id/pickup')
+  @UseGuards(RolesGuard)
+  @Roles(Role.REPARTIDOR)
+  pickup(@Param('id') id: string, @GetUser('id') driverId: string) {
+    return this.driversService.confirmPickup(id, driverId);
+  }
+
+  @Patch(':id/deliver')
+  @UseGuards(RolesGuard)
+  @Roles(Role.REPARTIDOR)
+  deliver(@Param('id') id: string, @GetUser('id') driverId: string) {
+    return this.driversService.confirmDelivery(id, driverId);
   }
 }

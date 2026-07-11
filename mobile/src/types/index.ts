@@ -4,6 +4,14 @@ export enum Role {
   CLIENTE = 'CLIENTE',
   VENDEDOR = 'VENDEDOR',
   ADMIN = 'ADMIN',
+  REPARTIDOR = 'REPARTIDOR',
+}
+
+export enum DriverOrderStatus {
+  ASIGNADO = 'ASIGNADO',
+  ACEPTADO = 'ACEPTADO',
+  RETIRADO = 'RETIRADO',
+  ENTREGADO = 'ENTREGADO',
 }
 
 export enum OrderStatus {
@@ -240,10 +248,26 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
   deliveredAt?: string | null;
+  driverId?: string | null;
+  driverStatus?: DriverOrderStatus | null;
+  pickedUpAt?: string | null;
   restaurant?: Restaurant;
   address?: Address | null;
   items?: OrderItem[];
   payment?: Payment | null;
+  driver?: Pick<User, 'id' | 'name' | 'phone'> | null;
+  client?: Pick<User, 'id' | 'name' | 'phone'>;
+}
+
+export interface DriverProfile {
+  id: string;
+  userId: string;
+  isAvailable: boolean;
+  currentLat?: number | null;
+  currentLng?: number | null;
+  locationUpdatedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Review {

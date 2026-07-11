@@ -31,6 +31,7 @@ export default function RegisterScreen() {
   const { register } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState<Role.CLIENTE | Role.REPARTIDOR>(Role.CLIENTE);
   const {
     control,
     handleSubmit,
@@ -42,15 +43,14 @@ export default function RegisterScreen() {
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      // La app móvil solo registra clientes (rol por defecto en el backend).
       await register({
         name: data.name.trim(),
         email: data.email.trim(),
         password: data.password,
         phone: data.phone.trim() || undefined,
-        role: Role.CLIENTE,
+        role,
       });
-      router.replace('/(client)');
+      router.replace(role === Role.REPARTIDOR ? '/(repartidor)' : '/(client)');
     } catch (e) {
       notify('Error al registrarse', getApiError(e));
     } finally {
@@ -73,6 +73,27 @@ export default function RegisterScreen() {
           </View>
           <Text style={styles.title}>Crear cuenta</Text>
           <Text style={styles.subtitle}>Regístrate para hacer tus pedidos</Text>
+
+          <View style={styles.roleSwitch}>
+            <TouchableOpacity
+              style={[styles.rolePill, role === Role.CLIENTE && styles.rolePillActive]}
+              onPress={() => setRole(Role.CLIENTE)}
+            >
+              <Text style={[styles.rolePillText, role === Role.CLIENTE && styles.rolePillTextActive]}>
+                Cliente
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.rolePill, role === Role.REPARTIDOR && styles.rolePillActive]}
+              onPress={() => setRole(Role.REPARTIDOR)}
+            >
+              <Text
+                style={[styles.rolePillText, role === Role.REPARTIDOR && styles.rolePillTextActive]}
+              >
+                Repartidor
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.card}>
             <Controller
@@ -187,6 +208,23 @@ const styles = StyleSheet.create({
     padding: 20,
     ...Shadow.card,
   },
+  roleSwitch: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  rolePill: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: Radius.pill,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+  },
+  rolePillActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryLight },
+  rolePillText: { fontSize: 14, fontWeight: '700', color: Colors.textSecondary },
+  rolePillTextActive: { color: Colors.primaryDark },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
   footerText: { color: Colors.textSecondary },
   link: { color: Colors.primary, fontWeight: '700' },
