@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radius, Shadow } from '@/src/constants/colors';
 import { money } from '@/src/constants/status';
 import { Restaurant } from '@/src/types';
+import { priceTier } from '@/src/utils/priceTier';
 
 interface Props {
   restaurant: Restaurant;
@@ -25,10 +26,12 @@ export function RestaurantCard({ restaurant, onPress }: Props) {
           }}
           style={styles.cover}
         />
-        {/* Pill de rating flotante */}
+        {/* Pill de rating flotante + nivel de precio */}
         <View style={styles.ratingPill}>
           <Ionicons name="star" size={12} color={Colors.amber} />
           <Text style={styles.ratingText}>{r.rating.toFixed(1)}</Text>
+          <Text style={styles.priceDot}>·</Text>
+          <Text style={styles.ratingText}>{priceTier(r)}</Text>
         </View>
         {!r.isOpen && (
           <View style={styles.closedOverlay}>
@@ -92,6 +95,7 @@ const styles = StyleSheet.create({
     ...Shadow.card,
   },
   ratingText: { fontSize: 12, fontWeight: '800', color: Colors.text },
+  priceDot: { fontSize: 12, color: Colors.textTertiary },
   closedOverlay: {
     position: 'absolute',
     top: 0,

@@ -1,31 +1,57 @@
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Radius, Shadow } from '@/src/constants/colors';
+import { Radius, Shadow } from '@/src/constants/colors';
 import { useAuth } from '@/src/hooks/useAuth';
 import { usersApi } from '@/src/api/users.api';
 import { getApiError } from '@/src/api/axios';
 import { confirmAction, notify } from '@/src/utils/dialog';
+import {
+  hasNotificationPermission,
+  requestNotificationPermission,
+} from '@/src/utils/notifications';
+import { useClientTheme, Palette } from '@/src/theme/ClientThemeContext';
 import { Input } from '@/src/components/ui/Input';
 import { Button } from '@/src/components/ui/Button';
 
 const OPTIONS: { icon: keyof typeof Ionicons.glyphMap; label: string; route?: string }[] = [
   { icon: 'receipt-outline', label: 'Mis pedidos', route: '/(client)/history' },
-  { icon: 'location-outline', label: 'Mis direcciones' },
+  { icon: 'location-outline', label: 'Mis direcciones', route: '/(client)/addresses' },
   { icon: 'card-outline', label: 'Métodos de pago' },
-  { icon: 'notifications-outline', label: 'Notificaciones' },
   { icon: 'help-circle-outline', label: 'Ayuda' },
 ];
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const { colors, isDark, toggleTheme } = useClientTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [name, setName] = useState(user?.name ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [notifEnabled, setNotifEnabled] = useState(false);
+
+  useEffect(() => {
+    hasNotificationPermission().then(setNotifEnabled);
+  }, []);
+
+  const handleToggleNotifications = async (value: boolean) => {
+    if (!value) {
+      notify(
+        'Notificaciones',
+        'Para desactivarlas por completo, hazlo desde los ajustes del sistema.',
+      );
+      return;
+    }
+    const granted = await requestNotificationPermission();
+    setNotifEnabled(granted);
+    if (!granted) {
+      notify('Permiso denegado', 'Actívalo desde los ajustes del sistema para recibir avisos de tus pedidos.');
+    }
+  };
 
   const initials = (user?.name ?? '?')
     .split(' ')
@@ -68,7 +94,7 @@ export default function ProfileScreen() {
             <Text style={styles.email}>{user?.email}</Text>
           </View>
           <TouchableOpacity style={styles.editBtn} onPress={() => setEditing((v) => !v)}>
-            <Ionicons name={editing ? 'close' : 'create-outline'} size={20} color={Colors.primary} />
+            <Ionicons name={editing ? 'close' : 'create-outline'} size={20} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
@@ -87,6 +113,28 @@ export default function ProfileScreen() {
           </View>
         )}
 
+        {/* Preferencias */}
+        <View style={styles.list}>
+          <View style={[styles.optionRow, styles.optionBorder]}>
+            <Ionicons name="moon-outline" size={20} color={colors.textSecondary} />
+            <Text style={styles.optionLabel}>Modo oscuro</Text>
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              trackColor={{ true: colors.primary }}
+            />
+          </View>
+          <View style={styles.optionRow}>
+            <Ionicons name="notifications-outline" size={20} color={colors.textSecondary} />
+            <Text style={styles.optionLabel}>Notificaciones de pedidos</Text>
+            <Switch
+              value={notifEnabled}
+              onValueChange={handleToggleNotifications}
+              trackColor={{ true: colors.primary }}
+            />
+          </View>
+        </View>
+
         {/* Lista de opciones */}
         <View style={styles.list}>
           {OPTIONS.map((opt, i) => (
@@ -96,9 +144,9 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
               onPress={() => opt.route && router.push(opt.route as never)}
             >
-              <Ionicons name={opt.icon} size={20} color={Colors.textSecondary} />
+              <Ionicons name={opt.icon} size={20} color={colors.textSecondary} />
               <Text style={styles.optionLabel}>{opt.label}</Text>
-              <Ionicons name="chevron-forward" size={18} color={Colors.textTertiary} />
+              <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
             </TouchableOpacity>
           ))}
         </View>
@@ -109,62 +157,63 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 16, gap: 14 },
-  headerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    backgroundColor: Colors.white,
-    borderRadius: Radius.card,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadow.card,
-  },
-  avatar: {
-    width: 62,
-    height: 62,
-    borderRadius: 999,
-    backgroundColor: Colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: { color: Colors.primaryDark, fontSize: 22, fontWeight: '800' },
-  name: { fontSize: 18, fontWeight: '800', color: Colors.text },
-  email: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
-  editBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 999,
-    backgroundColor: Colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  card: {
-    backgroundColor: Colors.white,
-    borderRadius: Radius.card,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadow.card,
-  },
-  list: {
-    backgroundColor: Colors.white,
-    borderRadius: Radius.card,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    overflow: 'hidden',
-    ...Shadow.card,
-  },
-  optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-  },
-  optionBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
-  optionLabel: { flex: 1, fontSize: 15, color: Colors.text, fontWeight: '600' },
-});
+const makeStyles = (colors: Palette) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.background },
+    content: { padding: 16, gap: 14 },
+    headerCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      backgroundColor: colors.white,
+      borderRadius: Radius.card,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...Shadow.card,
+    },
+    avatar: {
+      width: 62,
+      height: 62,
+      borderRadius: 999,
+      backgroundColor: colors.primaryLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: { color: colors.primaryDark, fontSize: 22, fontWeight: '800' },
+    name: { fontSize: 18, fontWeight: '800', color: colors.text },
+    email: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+    editBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 999,
+      backgroundColor: colors.primaryLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    card: {
+      backgroundColor: colors.white,
+      borderRadius: Radius.card,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...Shadow.card,
+    },
+    list: {
+      backgroundColor: colors.white,
+      borderRadius: Radius.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden',
+      ...Shadow.card,
+    },
+    optionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 15,
+    },
+    optionBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
+    optionLabel: { flex: 1, fontSize: 15, color: colors.text, fontWeight: '600' },
+  });

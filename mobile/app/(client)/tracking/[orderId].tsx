@@ -1,19 +1,23 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Radius, Shadow } from '@/src/constants/colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Radius, Shadow } from '@/src/constants/colors';
+import { useClientTheme, Palette } from '@/src/theme/ClientThemeContext';
 import { money } from '@/src/constants/status';
 import { Order, OrderStatus } from '@/src/types';
 import { ordersApi } from '@/src/api/orders.api';
 import { getApiError } from '@/src/api/axios';
 import { confirmAction, notify } from '@/src/utils/dialog';
+import { notifyStatusChange } from '@/src/utils/notifications';
 import { Spinner } from '@/src/components/ui/Spinner';
 import { Button } from '@/src/components/ui/Button';
 import { OrderStatusStepper } from '@/src/components/orders/OrderStatusStepper';
 import { CourierMap } from '@/src/components/orders/CourierMap';
 import { DriverRouteMap } from '@/src/components/drivers/DriverRouteMap';
+import { RatingModal } from '@/src/components/reviews/RatingModal';
 import { Coords } from '@/src/utils/geo';
 
 const TITLES: Record<string, { title: string; emoji: string }> = {
@@ -30,15 +34,30 @@ const TITLES: Record<string, { title: string; emoji: string }> = {
 export default function TrackingScreen() {
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
   const router = useRouter();
+  const { colors } = useClientTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [showRating, setShowRating] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevStatus = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     try {
       const { data } = await ordersApi.findOne(orderId);
       setOrder(data);
+
+      const newStatus = data.estado.nombre;
+      if (prevStatus.current && prevStatus.current !== newStatus) {
+        const info = TITLES[newStatus];
+        if (info) notifyStatusChange(info.title, `Pedido #${data.id.slice(0, 8).toUpperCase()}`);
+        if (newStatus === OrderStatus.ENTREGADO) {
+          const reviewed = await AsyncStorage.getItem(`reviewed:${data.id}`);
+          if (reviewed !== '1') setShowRating(true);
+        }
+      }
+      prevStatus.current = newStatus;
     } catch (e) {
       if (!order) notify('Error', getApiError(e));
     } finally {
@@ -105,7 +124,7 @@ export default function TrackingScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => router.replace('/(client)/history')} hitSlop={10}>
-          <Ionicons name="arrow-back" size={24} color={Colors.text} />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.title}>Seguimiento</Text>
         <View style={{ width: 24 }} />
@@ -164,7 +183,7 @@ export default function TrackingScreen() {
                 style={styles.courierAction}
                 onPress={() => Linking.openURL(`tel:${order.driver!.phone}`)}
               >
-                <Ionicons name="call" size={18} color={Colors.primary} />
+                <Ionicons name="call" size={18} color={colors.primary} />
               </TouchableOpacity>
             )}
           </View>
@@ -198,67 +217,80 @@ export default function TrackingScreen() {
           />
         )}
       </ScrollView>
+
+      <RatingModal
+        visible={showRating}
+        restaurantId={order.restaurantId}
+        restaurantName={order.restaurant?.name}
+        orderId={order.id}
+        onClose={() => setShowRating(false)}
+        onSubmitted={async () => {
+          await AsyncStorage.setItem(`reviewed:${order.id}`, '1');
+          setShowRating(false);
+        }}
+      />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  title: { fontSize: 20, fontWeight: '800', color: Colors.text },
-  content: { padding: 16, gap: 16 },
-  hero: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: Colors.primaryLight,
-    borderRadius: Radius.card,
-    padding: 16,
-  },
-  heroEmoji: { fontSize: 34 },
-  heroTitle: { fontSize: 18, fontWeight: '800', color: Colors.primaryDark },
-  heroMeta: { fontSize: 13, color: Colors.primaryDark, opacity: 0.8, marginTop: 2 },
-  card: {
-    backgroundColor: Colors.white,
-    borderRadius: Radius.card,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadow.card,
-  },
-  courierCard: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  courierAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 999,
-    backgroundColor: Colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  courierInitials: { color: Colors.primaryDark, fontWeight: '800', fontSize: 15 },
-  courierName: { fontSize: 15, fontWeight: '800', color: Colors.text },
-  courierRole: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  courierAction: {
-    width: 40,
-    height: 40,
-    borderRadius: 999,
-    backgroundColor: Colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  restaurant: { fontSize: 16, fontWeight: '800', color: Colors.text },
-  divider: { height: 1, backgroundColor: Colors.border, marginVertical: 12 },
-  itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4, gap: 8 },
-  itemQty: { fontWeight: '700', color: Colors.primary },
-  itemName: { flex: 1, color: Colors.text },
-  itemPrice: { color: Colors.textSecondary },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  totalLabel: { fontWeight: '800', fontSize: 17, color: Colors.text },
-  totalValue: { fontWeight: '800', fontSize: 17, color: Colors.primary },
-});
+const makeStyles = (colors: Palette) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.background },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    title: { fontSize: 20, fontWeight: '800', color: colors.text },
+    content: { padding: 16, gap: 16 },
+    hero: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: colors.primaryLight,
+      borderRadius: Radius.card,
+      padding: 16,
+    },
+    heroEmoji: { fontSize: 34 },
+    heroTitle: { fontSize: 18, fontWeight: '800', color: colors.primaryDark },
+    heroMeta: { fontSize: 13, color: colors.primaryDark, opacity: 0.8, marginTop: 2 },
+    card: {
+      backgroundColor: colors.white,
+      borderRadius: Radius.card,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...Shadow.card,
+    },
+    courierCard: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    courierAvatar: {
+      width: 44,
+      height: 44,
+      borderRadius: 999,
+      backgroundColor: colors.primaryLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    courierInitials: { color: colors.primaryDark, fontWeight: '800', fontSize: 15 },
+    courierName: { fontSize: 15, fontWeight: '800', color: colors.text },
+    courierRole: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+    courierAction: {
+      width: 40,
+      height: 40,
+      borderRadius: 999,
+      backgroundColor: colors.primaryLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    restaurant: { fontSize: 16, fontWeight: '800', color: colors.text },
+    divider: { height: 1, backgroundColor: colors.border, marginVertical: 12 },
+    itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4, gap: 8 },
+    itemQty: { fontWeight: '700', color: colors.primary },
+    itemName: { flex: 1, color: colors.text },
+    itemPrice: { color: colors.textSecondary },
+    totalRow: { flexDirection: 'row', justifyContent: 'space-between' },
+    totalLabel: { fontWeight: '800', fontSize: 17, color: colors.text },
+    totalValue: { fontWeight: '800', fontSize: 17, color: colors.primary },
+  });

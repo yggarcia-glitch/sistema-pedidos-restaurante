@@ -3,16 +3,19 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/src/constants/colors';
 import { money, statusMeta } from '@/src/constants/status';
-import { Order } from '@/src/types';
+import { Order, OrderStatus } from '@/src/types';
 import { Badge } from '@/src/components/ui/Badge';
 
 interface Props {
   order: Order;
   onPress: () => void;
   onRepeat?: () => void;
+  onRate?: () => void;
+  repeating?: boolean;
 }
 
-export function OrderCard({ order, onPress, onRepeat }: Props) {
+export function OrderCard({ order, onPress, onRepeat, onRate, repeating }: Props) {
+  const isDelivered = order.estado.nombre === OrderStatus.ENTREGADO;
   const meta = statusMeta(order.estado.nombre);
   const date = new Date(order.createdAt).toLocaleDateString('es-EC', {
     day: '2-digit',
@@ -32,12 +35,20 @@ export function OrderCard({ order, onPress, onRepeat }: Props) {
       <Text style={styles.date}>{date}</Text>
       <View style={styles.footer}>
         <Text style={styles.total}>{money(order.total)}</Text>
-        {onRepeat && (
-          <TouchableOpacity style={styles.repeatBtn} onPress={onRepeat}>
-            <Ionicons name="repeat" size={16} color={Colors.primary} />
-            <Text style={styles.repeatText}>Repetir</Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.actions}>
+          {isDelivered && onRate && (
+            <TouchableOpacity style={styles.rateBtn} onPress={onRate}>
+              <Ionicons name="star-outline" size={16} color={Colors.amber} />
+              <Text style={styles.rateText}>Calificar</Text>
+            </TouchableOpacity>
+          )}
+          {onRepeat && (
+            <TouchableOpacity style={styles.repeatBtn} onPress={onRepeat} disabled={repeating}>
+              <Ionicons name="repeat" size={16} color={Colors.primary} />
+              <Text style={styles.repeatText}>{repeating ? 'Agregando…' : 'Repetir'}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -67,6 +78,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   total: { fontSize: 16, fontWeight: '800', color: Colors.text },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   repeatBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   repeatText: { color: Colors.primary, fontWeight: '700', fontSize: 14 },
+  rateBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  rateText: { color: Colors.text, fontWeight: '700', fontSize: 14 },
 });

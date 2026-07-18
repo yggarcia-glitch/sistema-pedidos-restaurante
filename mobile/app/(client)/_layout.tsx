@@ -1,37 +1,39 @@
 import React from 'react';
 import { Redirect, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/src/constants/colors';
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from '@expo-google-fonts/inter';
 import { useAuth } from '@/src/hooks/useAuth';
 import { useCart } from '@/src/hooks/useCart';
 import { Role } from '@/src/types';
 import { Spinner } from '@/src/components/ui/Spinner';
+import { ClientThemeProvider, useClientTheme } from '@/src/theme/ClientThemeContext';
 
-export default function ClientLayout() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+function ClientTabs() {
   const { itemCount } = useCart();
-
-  if (isLoading) return <Spinner />;
-  if (!isAuthenticated) return <Redirect href="/(auth)/login" />;
-  // La app móvil es solo para clientes; si no lo es, vuelve a la raíz (que
-  // muestra el aviso de gestionar desde la web).
-  if (user?.rol?.nombre !== Role.CLIENTE) return <Redirect href="/" />;
+  const { colors } = useClientTheme();
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textTertiary,
-        tabBarStyle: { backgroundColor: Colors.white, borderTopColor: Colors.border },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textTertiary,
+        tabBarStyle: { backgroundColor: colors.white, borderTopColor: colors.border },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Inicio',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
           ),
         }}
       />
@@ -41,8 +43,8 @@ export default function ClientLayout() {
           title: 'Carrito',
           // Badge con la cantidad de ítems en el carrito
           tabBarBadge: itemCount > 0 ? itemCount : undefined,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="cart-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'cart' : 'cart-outline'} size={size} color={color} />
           ),
         }}
       />
@@ -50,8 +52,8 @@ export default function ClientLayout() {
         name="history"
         options={{
           title: 'Pedidos',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="receipt-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'receipt' : 'receipt-outline'} size={size} color={color} />
           ),
         }}
       />
@@ -59,8 +61,8 @@ export default function ClientLayout() {
         name="profile"
         options={{
           title: 'Perfil',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
           ),
         }}
       />
@@ -68,6 +70,30 @@ export default function ClientLayout() {
       <Tabs.Screen name="restaurant/[id]" options={{ href: null }} />
       <Tabs.Screen name="checkout" options={{ href: null }} />
       <Tabs.Screen name="tracking/[orderId]" options={{ href: null }} />
+      <Tabs.Screen name="addresses" options={{ href: null }} />
     </Tabs>
+  );
+}
+
+export default function ClientLayout() {
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+  });
+
+  if (isLoading || !fontsLoaded) return <Spinner />;
+  if (!isAuthenticated) return <Redirect href="/(auth)/login" />;
+  // La app móvil es solo para clientes; si no lo es, vuelve a la raíz (que
+  // muestra el aviso de gestionar desde la web).
+  if (user?.rol?.nombre !== Role.CLIENTE) return <Redirect href="/" />;
+
+  return (
+    <ClientThemeProvider>
+      <ClientTabs />
+    </ClientThemeProvider>
   );
 }

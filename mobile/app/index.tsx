@@ -1,20 +1,32 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Redirect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/src/constants/colors';
 import { useAuth } from '@/src/hooks/useAuth';
 import { Role } from '@/src/types';
 import { Spinner } from '@/src/components/ui/Spinner';
 import { Button } from '@/src/components/ui/Button';
 
+const ONBOARDING_FLAG = 'onboarding_seen';
+
 // Punto de entrada. La app móvil sirve a clientes y repartidores;
 // los locales (vendedores) y el administrador gestionan desde la versión web.
 export default function Index() {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
+  const [onboardingSeen, setOnboardingSeen] = useState<boolean | null>(null);
 
-  if (isLoading) return <Spinner text="Cargando…" />;
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_FLAG).then((v) => setOnboardingSeen(v === '1'));
+  }, []);
+
+  if (isLoading || onboardingSeen === null) return <Spinner text="Cargando…" />;
+
+  if (!onboardingSeen) {
+    return <Redirect href="/onboarding" />;
+  }
 
   if (!isAuthenticated || !user) {
     return <Redirect href="/(auth)/login" />;
