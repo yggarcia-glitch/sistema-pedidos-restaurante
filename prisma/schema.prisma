@@ -75,6 +75,8 @@ model User {
   phone        String?
   rolId        Int       @map("rol_id")
   avatarUrl    String?
+  homeLat      Float?    @map("home_lat")
+  homeLng      Float?    @map("home_lng")
   isActive     Boolean   @default(true)
   refreshToken String?
   createdAt    DateTime  @default(now())

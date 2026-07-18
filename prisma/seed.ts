@@ -54,6 +54,13 @@ const DRIVERS = [
   { email: 'repartidor2@test.com', lat: CUENCA.lat + 0.025, lng: CUENCA.lng - 0.02 },
 ];
 
+// "Casa" (punto de entrega fijo) de los clientes de prueba. Como el sistema aún no
+// tiene módulo de direcciones, esta coordenada es el destino de la ruta que ve el
+// cliente en el seguimiento (~1.5 km de Burger House Cuenca).
+const CLIENT_HOMES = [
+  { email: 'cliente@test.com', lat: CUENCA.lat - 0.012, lng: CUENCA.lng + 0.008 },
+];
+
 const RESTAURANTS: RestaurantSeed[] = [
   {
     ownerEmail: 'vendedor@test.com',
@@ -304,6 +311,17 @@ async function main() {
     });
     usersByEmail[u.email] = user.id;
     console.log(`  👤 ${u.email} (${u.role})`);
+  }
+
+  // 1a) Casa (punto de entrega fijo) de los clientes de prueba.
+  for (const h of CLIENT_HOMES) {
+    const userId = usersByEmail[h.email];
+    if (!userId) continue;
+    await prisma.user.update({
+      where: { id: userId },
+      data: { homeLat: h.lat, homeLng: h.lng },
+    });
+    console.log(`  🏠 ${h.email} — casa fijada`);
   }
 
   // 1b) Perfiles de repartidor (disponibles, con ubicación inicial cerca de Cuenca).

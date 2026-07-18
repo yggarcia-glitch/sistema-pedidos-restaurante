@@ -8,11 +8,18 @@ interface Props {
   driverCoords: Coords;
   destination: Coords;
   destinationLabel: string;
+  originLabel?: string;
   height?: number;
 }
 
 // Mapa con la ruta real (OSRM) del repartidor hacia el punto de retiro o de entrega.
-export function DriverRouteMap({ driverCoords, destination, destinationLabel, height = 220 }: Props) {
+export function DriverRouteMap({
+  driverCoords,
+  destination,
+  destinationLabel,
+  originLabel = 'Tú',
+  height = 220,
+}: Props) {
   const [route, setRoute] = useState<{ latitude: number; longitude: number }[]>([]);
 
   useEffect(() => {
@@ -40,7 +47,7 @@ export function DriverRouteMap({ driverCoords, destination, destinationLabel, he
       >
         <Marker
           coordinate={{ latitude: driverCoords.lat, longitude: driverCoords.lng }}
-          title="Tú"
+          title={originLabel}
           pinColor="blue"
         />
         <Marker
