@@ -21,13 +21,23 @@ export class CartService {
   async getCart(userId: string) {
     let cart = await this.prisma.cart.findUnique({
       where: { userId },
-      include: { items: { include: ITEM_INCLUDE, orderBy: { createdAt: 'asc' } } },
+      include: {
+        items: { include: ITEM_INCLUDE, orderBy: { createdAt: 'asc' } },
+        restaurant: {
+          select: { id: true, name: true, deliveryFee: true, minOrder: true },
+        },
+      },
     });
 
     if (!cart) {
       cart = await this.prisma.cart.create({
         data: { userId },
-        include: { items: { include: ITEM_INCLUDE } },
+        include: {
+          items: { include: ITEM_INCLUDE },
+          restaurant: {
+            select: { id: true, name: true, deliveryFee: true, minOrder: true },
+          },
+        },
       });
     }
 

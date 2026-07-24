@@ -8,11 +8,15 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
+
+// Límite estricto para endpoints sensibles a fuerza bruta / spam de cuentas.
+const AUTH_THROTTLE = { default: { ttl: 60_000, limit: 5 } };
 
 @Controller('auth')
 export class AuthController {
@@ -20,12 +24,14 @@ export class AuthController {
 
   // POST /api/auth/register
   @Post('register')
+  @Throttle(AUTH_THROTTLE)
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
   // POST /api/auth/login
   @Post('login')
+  @Throttle(AUTH_THROTTLE)
   @HttpCode(HttpStatus.OK)
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);

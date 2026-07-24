@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -14,6 +16,13 @@ import { AddressesModule } from './addresses/addresses.module';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      {
+        // Límite general por defecto para toda la API.
+        ttl: 60_000,
+        limit: 60,
+      },
+    ]),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -27,5 +36,6 @@ import { AddressesModule } from './addresses/addresses.module';
     DriversModule,
     AddressesModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

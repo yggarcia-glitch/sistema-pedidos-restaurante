@@ -24,6 +24,9 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminRestaurantsPage from './pages/admin/AdminRestaurantsPage';
 
+// Not found
+import NotFoundPage from './pages/NotFoundPage';
+
 export default function App() {
   return (
     <Routes>
@@ -49,6 +52,9 @@ export default function App() {
       <Route path="/admin/dashboard" element={<PrivateRoute roles={['ADMIN']}><AdminDashboardPage /></PrivateRoute>} />
       <Route path="/admin/users" element={<PrivateRoute roles={['ADMIN']}><AdminUsersPage /></PrivateRoute>} />
       <Route path="/admin/restaurants" element={<PrivateRoute roles={['ADMIN']}><AdminRestaurantsPage /></PrivateRoute>} />
+
+      {/* 404 */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

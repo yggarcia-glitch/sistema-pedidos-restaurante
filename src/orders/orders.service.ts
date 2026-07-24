@@ -115,6 +115,16 @@ export class OrdersService {
       );
     }
 
+    // Si se indicó una dirección, debe existir y pertenecer al usuario.
+    if (dto.addressId) {
+      const address = await this.prisma.address.findUnique({
+        where: { id: dto.addressId },
+      });
+      if (!address || address.userId !== userId) {
+        throw new BadRequestException('Dirección de entrega no encontrada');
+      }
+    }
+
     // Resuelve los catálogos a FK antes de la transacción.
     const estadoPendienteId = await this.estadoPedidoId(OrderStatus.PENDIENTE);
     const tipoEntregaIdVal = await this.tipoEntregaId(tipoEntregaNombre);
