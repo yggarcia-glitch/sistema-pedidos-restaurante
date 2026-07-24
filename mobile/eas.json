@@ -10,7 +10,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://TU-BACKEND-EN-RENDER.onrender.com/api"
+        "EXPO_PUBLIC_API_URL": "https://sistema-pedidos-restaurante-9yiu.onrender.com/api"
       }
     },
     "production": {
@@ -19,7 +19,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://TU-BACKEND-EN-RENDER.onrender.com/api"
+        "EXPO_PUBLIC_API_URL": "https://sistema-pedidos-restaurante-9yiu.onrender.com/api"
       }
     }
   },
