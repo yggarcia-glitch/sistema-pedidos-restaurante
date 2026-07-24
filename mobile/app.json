@@ -15,6 +15,7 @@
       }
     },
     "android": {
+      "package": "com.itsscuenca.sistemapedidos",
       "adaptiveIcon": {
         "backgroundColor": "#E85D26",
         "foregroundImage": "./assets/android-icon-foreground.png",
