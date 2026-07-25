@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { productsApi } from '../../api/products.api';
 import { useMyRestaurant } from '../../hooks/useMyRestaurant';
@@ -87,11 +86,7 @@ export default function VendorMenuPage() {
     return (
       <SidebarLayout>
         <div className="p-[18px] text-[12px] text-txt-2">
-          No tienes un restaurante registrado aún.{' '}
-          <Link to="/vendor/dashboard" className="text-primary font-semibold">
-            Créalo desde el Dashboard
-          </Link>
-          .
+          No tienes un restaurante registrado aún.
         </div>
       </SidebarLayout>
     );

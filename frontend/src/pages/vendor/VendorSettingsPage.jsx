@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { restaurantsApi } from '../../api/restaurants.api';
 import { useMyRestaurant } from '../../hooks/useMyRestaurant';
-import { CreateRestaurantForm } from '../../components/vendor/CreateRestaurantForm';
 import { SidebarLayout } from '../../components/layout/SidebarLayout';
 import { TopBar } from '../../components/layout/TopBar';
 import { Input } from '../../components/ui/Input';
@@ -72,7 +71,9 @@ export default function VendorSettingsPage() {
   if (!restaurant) {
     return (
       <SidebarLayout>
-        <CreateRestaurantForm onCreated={setRestaurant} />
+        <div className="p-[18px] text-[12px] text-txt-2">
+          No tienes un restaurante registrado aún.
+        </div>
       </SidebarLayout>
     );
   }
