@@ -4,7 +4,9 @@ import api from '../../api/axios';
 import { SidebarLayout } from '../../components/layout/SidebarLayout';
 import { TopBar } from '../../components/layout/TopBar';
 import { CategoryTabs } from '../../components/restaurants/CategoryTabs';
+import { CreateRestaurantModal } from '../../components/admin/CreateRestaurantModal';
 import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { Pagination } from '../../components/ui/Pagination';
 
@@ -20,6 +22,7 @@ export default function AdminRestaurantsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [modalOpen, setModalOpen] = useState(false);
 
   const loadRestaurants = () => {
     setLoading(true);
@@ -51,7 +54,18 @@ export default function AdminRestaurantsPage() {
       <TopBar
         title="Restaurantes"
         subtitle="Gestión de locales"
-        actions={pending > 0 ? <Badge type="warn">{pending} pendientes aprobación</Badge> : null}
+        actions={
+          <div className="flex items-center gap-[10px]">
+            {pending > 0 && <Badge type="warn">{pending} pendientes aprobación</Badge>}
+            <Button size="sm" onClick={() => setModalOpen(true)}>+ Nuevo local</Button>
+          </div>
+        }
+      />
+
+      <CreateRestaurantModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onCreated={loadRestaurants}
       />
       <div className="p-[22px]">
         <div className="mb-[12px]">
