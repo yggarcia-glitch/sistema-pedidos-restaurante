@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -35,15 +36,32 @@ export class RestaurantsService {
     return restaurant;
   }
 
-  async create(dto: CreateRestaurantDto, userId: string) {
+  async create(dto: CreateRestaurantDto, requesterId: string, requesterRole: string) {
+    const { ownerId: dtoOwnerId, ...rest } = dto;
+
+    // Un VENDEDOR solo puede crear su propio restaurante; un ADMIN puede
+    // asignarlo a cualquier vendedor indicando ownerId.
+    const ownerId =
+      requesterRole === Role.ADMIN && dtoOwnerId ? dtoOwnerId : requesterId;
+
+    if (requesterRole === Role.ADMIN) {
+      const owner = await this.prisma.user.findUnique({
+        where: { id: ownerId },
+        include: { rol: true },
+      });
+      if (!owner || owner.rol.nombre !== Role.VENDEDOR) {
+        throw new BadRequestException('El dueño debe ser un usuario con rol VENDEDOR');
+      }
+    }
+
     const existing = await this.prisma.restaurant.findUnique({
-      where: { ownerId: userId },
+      where: { ownerId },
     });
     if (existing) {
-      throw new ConflictException('Ya tienes un restaurante registrado');
+      throw new ConflictException('Ese vendedor ya tiene un restaurante registrado');
     }
     return this.prisma.restaurant.create({
-      data: { ...dto, ownerId: userId },
+      data: { ...rest, ownerId },
       include: { owner: { select: OWNER_SELECT } },
     });
   }

@@ -31,12 +31,13 @@ export class RestaurantsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.VENDEDOR)
+  @Roles(Role.VENDEDOR, Role.ADMIN)
   create(
     @Body() dto: CreateRestaurantDto,
     @GetUser('id') userId: string,
+    @GetUser('role') userRole: Role,
   ) {
-    return this.restaurantsService.create(dto, userId);
+    return this.restaurantsService.create(dto, userId, userRole);
   }
 
   @Get()

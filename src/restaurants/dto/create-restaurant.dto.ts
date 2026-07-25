@@ -6,11 +6,18 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateRestaurantDto {
+  // Solo lo usa un ADMIN, para asignar el restaurante a un vendedor específico.
+  // Si lo manda un VENDEDOR, se ignora y se usa su propio id (ver service).
+  @IsOptional()
+  @IsUUID()
+  ownerId?: string;
+
   @IsString()
   @IsNotEmpty()
   name: string;
