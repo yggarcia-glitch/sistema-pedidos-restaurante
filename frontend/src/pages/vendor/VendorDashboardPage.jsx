@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { restaurantsApi } from '../../api/restaurants.api';
 import { ordersApi } from '../../api/orders.api';
 import { useMyRestaurant } from '../../hooks/useMyRestaurant';
+import { CreateRestaurantForm } from '../../components/vendor/CreateRestaurantForm';
 import { SidebarLayout } from '../../components/layout/SidebarLayout';
 import { TopBar } from '../../components/layout/TopBar';
 import { SalesArea } from '../../components/ui/SalesArea';
@@ -103,6 +104,14 @@ export default function VendorDashboardPage() {
   };
 
   if (loading) return <SidebarLayout><PageSpinner /></SidebarLayout>;
+
+  if (!restaurant) {
+    return (
+      <SidebarLayout>
+        <CreateRestaurantForm onCreated={setRestaurant} />
+      </SidebarLayout>
+    );
+  }
 
   const todayKey = dayKey(new Date());
   const yKey = dayKey(new Date(Date.now() - 86400000));
