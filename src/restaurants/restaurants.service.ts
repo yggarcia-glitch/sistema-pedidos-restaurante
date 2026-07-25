@@ -16,6 +16,10 @@ import { haversineDistance } from '../common/utils/geo.util';
 
 const OWNER_SELECT = { id: true, name: true, email: true, phone: true };
 
+// Categorías con las que arranca todo restaurante nuevo, para que el
+// vendedor pueda cargar productos de inmediato (las puede editar o borrar).
+const DEFAULT_CATEGORIES = ['Entradas', 'Platos fuertes', 'Bebidas', 'Postres'];
+
 @Injectable()
 export class RestaurantsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -60,10 +64,22 @@ export class RestaurantsService {
     if (existing) {
       throw new ConflictException('Ese vendedor ya tiene un restaurante registrado');
     }
-    return this.prisma.restaurant.create({
+    const restaurant = await this.prisma.restaurant.create({
       data: { ...rest, ownerId },
       include: { owner: { select: OWNER_SELECT } },
     });
+
+    // Categorías básicas para que el vendedor pueda empezar a cargar productos
+    // de inmediato; las puede editar o borrar después.
+    await this.prisma.category.createMany({
+      data: DEFAULT_CATEGORIES.map((name, i) => ({
+        restaurantId: restaurant.id,
+        name,
+        sortOrder: i,
+      })),
+    });
+
+    return this.findOne(restaurant.id);
   }
 
   async findAll(query: FindRestaurantsQueryDto) {
@@ -83,6 +99,7 @@ export class RestaurantsService {
         include: {
           owner: { select: OWNER_SELECT },
           tags: { include: { tag: true } },
+          categories: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
           _count: { select: { products: true, reviews: true } },
         },
         orderBy: { createdAt: 'desc' },
