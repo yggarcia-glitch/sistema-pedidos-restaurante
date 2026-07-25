@@ -123,7 +123,7 @@ export function Navbar() {
               </button>
 
               {notifOpen && (
-                <div className="absolute right-0 top-[42px] w-[280px] bg-white border border-border rounded-[10px] shadow-lg py-1 z-50">
+                <div className="absolute right-0 top-[42px] w-[280px] bg-white border border-border rounded-[10px] shadow-lg py-1 z-[1100]">
                   <p className="px-3 py-2 text-[12px] font-bold text-txt border-b border-border">
                     Pedidos activos
                   </p>
@@ -169,7 +169,7 @@ export function Navbar() {
             </button>
 
             {open && (
-              <div className="absolute right-0 top-[42px] w-[200px] bg-white border border-border rounded-[10px] shadow-lg py-1 z-50">
+              <div className="absolute right-0 top-[42px] w-[200px] bg-white border border-border rounded-[10px] shadow-lg py-1 z-[1100]">
                 <div className="px-3 py-2 border-b border-border">
                   <p className="text-[12px] font-bold text-txt truncate">{user?.name}</p>
                   <p className="text-[10px] text-txt-2 truncate">{user?.email}</p>
