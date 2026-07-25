@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { MapPin, Search } from 'lucide-react';
 import { Navbar } from '../../components/layout/Navbar';
 import { RestaurantCard } from '../../components/restaurants/RestaurantCard';
 import { RestaurantMap } from '../../components/restaurants/RestaurantMap';
@@ -40,12 +41,12 @@ export default function HomePage() {
         {/* Fila 1: ubicación + buscador */}
         <div className="flex items-center gap-[14px] mb-[12px]">
           <div className="flex items-center gap-1 flex-shrink-0">
-            <span className="text-primary">📍</span>
+            <MapPin size={14} className="text-primary" />
             <span className="font-semibold text-[11px] text-txt">Cuenca</span>
             <span className="text-txt-3">▾</span>
           </div>
           <div className="bg-background rounded-full px-[14px] py-[8px] flex items-center gap-[8px] border border-border flex-1 max-w-lg">
-            <span className="text-txt-3">🔍</span>
+            <Search size={14} className="text-txt-3" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}

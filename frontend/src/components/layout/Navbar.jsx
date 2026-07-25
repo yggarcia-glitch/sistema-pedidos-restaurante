@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Bell, Receipt, UtensilsCrossed } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../ui/Button';
 
@@ -24,6 +25,9 @@ export function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const showBack = location.pathname !== '/';
 
   // Cerrar el menú al hacer clic fuera.
   useEffect(() => {
@@ -38,27 +42,35 @@ export function Navbar() {
 
   return (
     <header className="h-[56px] bg-white border-b border-border px-6 flex items-center justify-between">
-      {/* Izquierda: logo + nombre */}
-      <Link to="/" className="flex items-center gap-2">
-        <div className="w-[36px] h-[36px] rounded-[10px] bg-primary flex items-center justify-center text-[18px]">
-          🍽
-        </div>
-        <span className="font-bold text-[15px] text-txt">Sistema de Pedidos</span>
-      </Link>
+      {/* Izquierda: retroceder + logo + nombre */}
+      <div className="flex items-center gap-3">
+        {showBack && (
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            title="Volver"
+            className="w-[34px] h-[34px] rounded-full border border-border flex items-center justify-center text-txt hover:bg-background"
+          >
+            <ArrowLeft size={18} />
+          </button>
+        )}
+        <Link to="/" className="flex items-center gap-2">
+          <div className="w-[36px] h-[36px] rounded-[10px] bg-primary flex items-center justify-center text-white">
+            <UtensilsCrossed size={18} />
+          </div>
+          <span className="font-bold text-[15px] text-txt">Sistema de Pedidos</span>
+        </Link>
+      </div>
 
       {/* Derecha */}
       {isAuthenticated ? (
         <div className="flex items-center gap-4">
           {user?.rol?.nombre === 'CLIENTE' && (
-            <Link
-              to="/history"
-              title="Mis pedidos"
-              className="text-[18px] leading-none"
-            >
-              🧾
+            <Link to="/history" title="Mis pedidos" className="text-txt-2 hover:text-txt">
+              <Receipt size={20} />
             </Link>
           )}
-          <span className="text-[18px] cursor-pointer">🔔</span>
+          <Bell size={20} className="text-txt-2 hover:text-txt cursor-pointer" />
           <div className="relative" ref={menuRef}>
             <button
               type="button"
