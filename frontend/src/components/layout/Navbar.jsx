@@ -49,6 +49,15 @@ export function Navbar() {
       {/* Derecha */}
       {isAuthenticated ? (
         <div className="flex items-center gap-4">
+          {user?.rol?.nombre === 'CLIENTE' && (
+            <Link
+              to="/history"
+              title="Mis pedidos"
+              className="text-[18px] leading-none"
+            >
+              🧾
+            </Link>
+          )}
           <span className="text-[18px] cursor-pointer">🔔</span>
           <div className="relative" ref={menuRef}>
             <button
