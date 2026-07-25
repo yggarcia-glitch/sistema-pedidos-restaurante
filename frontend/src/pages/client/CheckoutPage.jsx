@@ -39,8 +39,8 @@ export default function CheckoutPage() {
     try {
       const { data: order } = await ordersApi.create({ deliveryType: 'DELIVERY' });
       await paymentsApi.create({ orderId: order.id, method });
-      await fetchCart();
       navigate(`/tracking/${order.id}`);
+      fetchCart();
     } catch (err) {
       setError(err.response?.data?.message ?? 'Error al procesar el pedido');
     } finally {
