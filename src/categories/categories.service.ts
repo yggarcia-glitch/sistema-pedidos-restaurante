@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RestaurantsService } from '../restaurants/restaurants.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -29,15 +33,26 @@ export class CategoriesService {
     });
     if (!restaurant) throw new NotFoundException('Restaurante no encontrado');
 
+    // Devuelve las categorías genéricas globales (restaurantId null) + las
+    // propias del restaurante. Globales primero, luego por sortOrder.
     return this.prisma.category.findMany({
-      where: { restaurantId },
-      orderBy: { sortOrder: 'asc' },
+      where: { OR: [{ restaurantId: null }, { restaurantId }] },
+      orderBy: [
+        { restaurantId: { sort: 'asc', nulls: 'first' } },
+        { sortOrder: 'asc' },
+      ],
     });
   }
 
   async update(id: string, dto: UpdateCategoryDto, userId: string, userRole: string) {
     const category = await this.prisma.category.findUnique({ where: { id } });
     if (!category) throw new NotFoundException('Categoría no encontrada');
+
+    if (!category.restaurantId) {
+      throw new ForbiddenException(
+        'Las categorías globales no se pueden modificar',
+      );
+    }
 
     await this.restaurantsService.verifyOwnership(
       category.restaurantId,
@@ -50,6 +65,12 @@ export class CategoriesService {
   async remove(id: string, userId: string, userRole: string) {
     const category = await this.prisma.category.findUnique({ where: { id } });
     if (!category) throw new NotFoundException('Categoría no encontrada');
+
+    if (!category.restaurantId) {
+      throw new ForbiddenException(
+        'Las categorías globales no se pueden eliminar',
+      );
+    }
 
     await this.restaurantsService.verifyOwnership(
       category.restaurantId,

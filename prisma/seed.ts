@@ -273,6 +273,20 @@ const CATALOGOS = {
   tiposTag: ['COMIDA', 'RESTAURANTE'],
 };
 
+// Categorías genéricas globales (restaurantId null). Disponibles para todos los
+// restaurantes desde el momento en que se registran, para que puedan crear
+// productos sin necesidad de inventar sus propias categorías primero.
+const GLOBAL_CATEGORIES = [
+  'Entradas',
+  'Platos fuertes',
+  'Sopas',
+  'Acompañantes',
+  'Ensaladas',
+  'Bebidas',
+  'Postres',
+  'Combos',
+];
+
 async function main() {
   console.log('🌱 Iniciando seed…');
 
@@ -292,6 +306,21 @@ async function main() {
   await upsertCatalogo(prisma.estadoPago, CATALOGOS.estadosPago);
   await upsertCatalogo(prisma.tipoTag, CATALOGOS.tiposTag);
   console.log('  📚 Catálogos poblados');
+
+  // 0a) Categorías genéricas globales (restaurantId null). Idempotente por nombre.
+  let sortGlobal = 0;
+  for (const name of GLOBAL_CATEGORIES) {
+    const existing = await prisma.category.findFirst({
+      where: { restaurantId: null, name },
+    });
+    if (!existing) {
+      await prisma.category.create({
+        data: { restaurantId: null, name, sortOrder: sortGlobal },
+      });
+    }
+    sortGlobal++;
+  }
+  console.log(`  🌐 ${GLOBAL_CATEGORIES.length} categorías globales listas`);
 
   // Mapa nombre-de-rol -> id, para asignar rolId a los usuarios.
   const roles = await prisma.rol.findMany();

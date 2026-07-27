@@ -179,16 +179,16 @@ model RestaurantSchedule {
 }
 
 model Category {
-  id           String     @id @default(uuid())
-  restaurantId String
+  id           String      @id @default(uuid())
+  restaurantId String?
   name         String
   description  String?
   imageUrl     String?
-  sortOrder    Int        @default(0)
-  isActive     Boolean    @default(true)
-  createdAt    DateTime   @default(now())
+  sortOrder    Int         @default(0)
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
 
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurant Restaurant? @relation(fields: [restaurantId], references: [id])
   products   Product[]
 
   @@map("categories")
