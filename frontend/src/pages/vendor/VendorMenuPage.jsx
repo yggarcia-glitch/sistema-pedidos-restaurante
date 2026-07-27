@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { productsApi } from '../../api/products.api';
+import { categoriesApi } from '../../api/categories.api';
 import { useMyRestaurant } from '../../hooks/useMyRestaurant';
 import { SidebarLayout } from '../../components/layout/SidebarLayout';
 import { TopBar } from '../../components/layout/TopBar';
@@ -23,14 +24,48 @@ export default function VendorMenuPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
 
+  // Modal para crear categorías propias del restaurante.
+  const [catModalOpen, setCatModalOpen] = useState(false);
+  const [catName, setCatName] = useState('');
+  const [savingCat, setSavingCat] = useState(false);
+  const [catError, setCatError] = useState('');
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
+
+  // Carga categorías desde el endpoint: incluye las genéricas globales + las
+  // propias del restaurante. Así un restaurante nuevo (sin categorías propias)
+  // igual tiene opciones para asignar a sus productos.
+  const loadCategories = (restaurantId) =>
+    categoriesApi
+      .findAll(restaurantId)
+      .then(({ data }) => setCategories(data))
+      .catch(() => setCategories(restaurant?.categories ?? []));
 
   useEffect(() => {
     if (!restaurant) return;
-    setCategories(restaurant.categories ?? []);
+    loadCategories(restaurant.id);
     loadProducts(restaurant.id, null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurant]);
+
+  const openCreateCat = () => { setCatName(''); setCatError(''); setCatModalOpen(true); };
+
+  const onCreateCategory = async (e) => {
+    e.preventDefault();
+    const name = catName.trim();
+    if (!name) { setCatError('Escribe un nombre'); return; }
+    setSavingCat(true);
+    setCatError('');
+    try {
+      await categoriesApi.create(restaurant.id, { name });
+      await loadCategories(restaurant.id);
+      setCatModalOpen(false);
+    } catch (err) {
+      setCatError(err.response?.data?.message ?? 'Error al crear categoría');
+    } finally {
+      setSavingCat(false);
+    }
+  };
 
   const loadProducts = (restaurantId, catId) => {
     setLoading(true);
@@ -97,7 +132,12 @@ export default function VendorMenuPage() {
       <TopBar
         title="Gestión del menú"
         subtitle={restaurant?.name}
-        actions={<Button size="sm" onClick={openCreate}>+ Nuevo producto</Button>}
+        actions={
+          <div className="flex items-center gap-[8px]">
+            <Button size="sm" variant="outline" onClick={openCreateCat}>+ Categoría</Button>
+            <Button size="sm" onClick={openCreate}>+ Nuevo producto</Button>
+          </div>
+        }
       />
       <div className="p-[22px]">
         <div className="mb-[12px]">
@@ -169,6 +209,24 @@ export default function VendorMenuPage() {
           {formError && <p className="text-[10px] text-red-500">{formError}</p>}
           <Button type="submit" variant="primary" fullWidth loading={saving}>
             {editing ? 'Guardar cambios' : 'Crear producto'}
+          </Button>
+        </form>
+      </Modal>
+
+      <Modal open={catModalOpen} onClose={() => setCatModalOpen(false)} title="Nueva categoría">
+        <form onSubmit={onCreateCategory} className="space-y-3">
+          <Input
+            label="Nombre de la categoría"
+            value={catName}
+            onChange={(e) => setCatName(e.target.value)}
+            placeholder="Ej: Promociones, Especiales del día…"
+          />
+          <p className="text-[10px] text-txt-2">
+            Se agrega solo a tu restaurante, además de las categorías genéricas.
+          </p>
+          {catError && <p className="text-[10px] text-red-500">{catError}</p>}
+          <Button type="submit" variant="primary" fullWidth loading={savingCat}>
+            Crear categoría
           </Button>
         </form>
       </Modal>

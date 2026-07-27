@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { authApi } from '../../api/auth.api';
 import { restaurantsApi } from '../../api/restaurants.api';
+import { categoriesApi } from '../../api/categories.api';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
@@ -14,6 +15,11 @@ const NUMERIC = ['deliveryTime', 'deliveryFee', 'minOrder', 'latitude', 'longitu
 export function CreateRestaurantModal({ open, onClose, onCreated }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  // Categorías propias que se le crearán al local al momento de registrarlo.
+  // (Adicionales a las categorías genéricas globales, que ya están disponibles
+  // para todos los restaurantes automáticamente.)
+  const [cats, setCats] = useState([]);
+  const [catInput, setCatInput] = useState('');
   const {
     register,
     handleSubmit,
@@ -30,9 +36,25 @@ export function CreateRestaurantModal({ open, onClose, onCreated }) {
 
   const close = () => {
     setError('');
+    setCats([]);
+    setCatInput('');
     reset();
     onClose();
   };
+
+  const addCat = () => {
+    const name = catInput.trim();
+    if (!name) return;
+    // Evita duplicados (case-insensitive).
+    if (cats.some((c) => c.toLowerCase() === name.toLowerCase())) {
+      setCatInput('');
+      return;
+    }
+    setCats((prev) => [...prev, name]);
+    setCatInput('');
+  };
+
+  const removeCat = (name) => setCats((prev) => prev.filter((c) => c !== name));
 
   const onSubmit = async (form) => {
     setSaving(true);
@@ -60,6 +82,13 @@ export function CreateRestaurantModal({ open, onClose, onCreated }) {
       });
 
       const { data: restaurant } = await restaurantsApi.create(restaurantPayload);
+
+      // 3) Crea las categorías propias del local (si el admin agregó alguna).
+      //    Van con sortOrder incremental para respetar el orden ingresado.
+      for (let i = 0; i < cats.length; i++) {
+        await categoriesApi.create(restaurant.id, { name: cats[i], sortOrder: i });
+      }
+
       onCreated(restaurant);
       close();
     } catch (err) {
@@ -158,6 +187,49 @@ export function CreateRestaurantModal({ open, onClose, onCreated }) {
             <Input label="Envío ($)" type="number" step="0.01" className="flex-1" {...register('deliveryFee')} />
             <Input label="Mín. pedido ($)" type="number" step="0.01" className="flex-1" {...register('minOrder')} />
           </div>
+        </div>
+
+        {/* Categorías del local */}
+        <div>
+          <h4 className="text-[11px] font-bold text-txt-2 uppercase mb-[8px]">
+            Categorías del local (opcional)
+          </h4>
+          <p className="text-[10px] text-txt-2 mb-[8px]">
+            Además de las categorías genéricas, puedes crearle categorías propias.
+          </p>
+          <div className="flex gap-[8px]">
+            <Input
+              className="flex-1"
+              placeholder="Ej: Especialidades de la casa"
+              value={catInput}
+              onChange={(e) => setCatInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); addCat(); }
+              }}
+            />
+            <Button type="button" size="sm" variant="outline" onClick={addCat}>
+              Añadir
+            </Button>
+          </div>
+          {cats.length > 0 && (
+            <div className="flex flex-wrap gap-[6px] mt-[8px]">
+              {cats.map((c) => (
+                <span
+                  key={c}
+                  className="inline-flex items-center gap-[6px] bg-background border border-border rounded-full px-[10px] py-[4px] text-[11px] text-txt"
+                >
+                  {c}
+                  <button
+                    type="button"
+                    onClick={() => removeCat(c)}
+                    className="text-txt-2 hover:text-red-500 cursor-pointer leading-none"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {error && <p className="text-[11px] text-red-500">{error}</p>}
