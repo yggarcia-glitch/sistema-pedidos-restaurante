@@ -100,7 +100,7 @@ export default function AdminRestaurantsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-[8px] flex-shrink-0">
-                <Badge type={r.isOpen ? 'ok' : 'default'}>{r.isOpen ? 'Abierto' : 'Cerrado'}</Badge>
+                <Badge type={r.isOpenNow ? 'ok' : 'default'}>{r.isOpenNow ? 'Abierto' : 'Cerrado'}</Badge>
                 <span
                   onClick={() => toggleActive(r)}
                   className="text-txt-2 cursor-pointer"

@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '../common/enums/role.enum';
 import { OrderStatus } from '../common/enums/order-status.enum';
 import { DeliveryType } from '../common/enums/delivery-type.enum';
+import { computeIsOpenNow } from '../common/utils/schedule.util';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-status.dto';
 import { DriversService } from '../drivers/drivers.service';
@@ -91,9 +92,12 @@ export class OrdersService {
 
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id: cart.restaurantId },
+      include: { schedules: true },
     });
     if (!restaurant) throw new NotFoundException('Restaurante no encontrado');
-    if (!restaurant.isOpen) throw new BadRequestException('El restaurante está cerrado');
+    if (!computeIsOpenNow(restaurant.isOpen, restaurant.schedules)) {
+      throw new BadRequestException('El restaurante está cerrado en este momento');
+    }
 
     // Calcular subtotal: precio unitario × cantidad + extras × cantidad
     const subtotal = cart.items.reduce((acc, item) => {

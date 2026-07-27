@@ -13,12 +13,9 @@ import { FindRestaurantsQueryDto } from './dto/find-restaurants-query.dto';
 import { NearbyQueryDto } from './dto/nearby-query.dto';
 import { RestaurantScheduleDto } from './dto/restaurant-schedule.dto';
 import { haversineDistance } from '../common/utils/geo.util';
+import { computeIsOpenNow } from '../common/utils/schedule.util';
 
 const OWNER_SELECT = { id: true, name: true, email: true, phone: true };
-
-// Categorías con las que arranca todo restaurante nuevo, para que el
-// vendedor pueda cargar productos de inmediato (las puede editar o borrar).
-const DEFAULT_CATEGORIES = ['Entradas', 'Platos fuertes', 'Bebidas', 'Postres'];
 
 @Injectable()
 export class RestaurantsService {
@@ -69,16 +66,8 @@ export class RestaurantsService {
       include: { owner: { select: OWNER_SELECT } },
     });
 
-    // Categorías básicas para que el vendedor pueda empezar a cargar productos
-    // de inmediato; las puede editar o borrar después.
-    await this.prisma.category.createMany({
-      data: DEFAULT_CATEGORIES.map((name, i) => ({
-        restaurantId: restaurant.id,
-        name,
-        sortOrder: i,
-      })),
-    });
-
+    // No se siembran categorías propias: todo restaurante nuevo ya dispone de
+    // las categorías genéricas globales, y puede crear las suyas si lo desea.
     return this.findOne(restaurant.id);
   }
 
@@ -100,6 +89,7 @@ export class RestaurantsService {
           owner: { select: OWNER_SELECT },
           tags: { include: { tag: true } },
           categories: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+          schedules: { orderBy: { dayOfWeek: 'asc' } },
           _count: { select: { products: true, reviews: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -107,7 +97,13 @@ export class RestaurantsService {
       this.prisma.restaurant.count({ where }),
     ]);
 
-    return { data, total, page, totalPages: Math.ceil(total / limit) };
+    // isOpenNow: estado real según horario (no el flag manual, que siempre es true)
+    const withStatus = data.map((r) => ({
+      ...r,
+      isOpenNow: computeIsOpenNow(r.isOpen, r.schedules),
+    }));
+
+    return { data: withStatus, total, page, totalPages: Math.ceil(total / limit) };
   }
 
   async findNearby(query: NearbyQueryDto) {
@@ -115,13 +111,18 @@ export class RestaurantsService {
 
     const restaurants = await this.prisma.restaurant.findMany({
       where: { isActive: true },
-      include: { owner: { select: OWNER_SELECT }, tags: { include: { tag: true } } },
+      include: {
+        owner: { select: OWNER_SELECT },
+        tags: { include: { tag: true } },
+        schedules: { orderBy: { dayOfWeek: 'asc' } },
+      },
     });
 
     // Filtra por radio usando Haversine y ordena por distancia ascendente
     return restaurants
       .map((r) => ({
         ...r,
+        isOpenNow: computeIsOpenNow(r.isOpen, r.schedules),
         distanceKm:
           Math.round(haversineDistance(lat, lng, r.latitude, r.longitude) * 100) / 100,
       }))
@@ -141,7 +142,7 @@ export class RestaurantsService {
       },
     });
     if (!restaurant) throw new NotFoundException('Restaurante no encontrado');
-    return restaurant;
+    return { ...restaurant, isOpenNow: computeIsOpenNow(restaurant.isOpen, restaurant.schedules) };
   }
 
   async update(id: string, dto: UpdateRestaurantDto, userId: string, userRole: string) {
@@ -209,20 +210,6 @@ export class RestaurantsService {
       orderBy: { dayOfWeek: 'asc' },
     });
 
-    return { schedules, isOpenNow: this.isOpenNow(schedules) };
-  }
-
-  private isOpenNow(
-    schedules: { dayOfWeek: number; openTime: string; closeTime: string; isClosed: boolean }[],
-  ): boolean {
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-    const currentTime = `${hh}:${mm}`;
-
-    const today = schedules.find((s) => s.dayOfWeek === dayOfWeek);
-    if (!today || today.isClosed) return false;
-    return currentTime >= today.openTime && currentTime <= today.closeTime;
+    return { schedules, isOpenNow: computeIsOpenNow(restaurant.isOpen, schedules) };
   }
 }

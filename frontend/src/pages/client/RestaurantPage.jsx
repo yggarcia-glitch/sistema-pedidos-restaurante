@@ -81,8 +81,8 @@ export default function RestaurantPage() {
             ★ {Number(restaurant.rating ?? 0).toFixed(1)}
           </span>
           <span className="text-txt-2 text-[10px]">({restaurant.totalReviews ?? 0} reseñas)</span>
-          <Badge type={restaurant.isOpen ? 'ok' : 'default'}>
-            {restaurant.isOpen ? 'Abierto' : 'Cerrado'}
+          <Badge type={restaurant.isOpenNow ? 'ok' : 'default'}>
+            {restaurant.isOpenNow ? 'Abierto' : 'Cerrado'}
           </Badge>
         </div>
 

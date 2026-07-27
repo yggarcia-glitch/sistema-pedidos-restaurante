@@ -7,6 +7,7 @@ import { TopBar } from '../../components/layout/TopBar';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { PageSpinner } from '../../components/ui/Spinner';
+import { ScheduleEditor } from '../../components/vendor/ScheduleEditor';
 
 // Campos numéricos que deben enviarse como Number al backend.
 const NUMERIC = ['deliveryTime', 'deliveryFee', 'minOrder'];
@@ -150,6 +151,11 @@ export default function VendorSettingsPage() {
             Guardar cambios
           </Button>
         </form>
+
+        {/* Horario de atención (se guarda por separado) */}
+        <div className="mt-[10px]">
+          <ScheduleEditor restaurantId={restaurant.id} />
+        </div>
       </div>
     </SidebarLayout>
   );
